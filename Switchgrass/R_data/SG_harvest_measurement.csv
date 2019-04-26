@@ -1,4 +1,4 @@
-Plant_Number,height_cm,leaf#,coverscale_1_5,root_length,notes_plantheight,notes_rootlength,observer
+Plant_Number,height_cm,leaf_no,coverscale_1_5,root_length,notes_plantheight,notes_rootlength,observer
 1,,,,,,empty pot,"Harry (height, leaf#, coverscale); Shanna (root length)"
 2,5.6,2,2,15.6,yellow,,"Harry (height, leaf#, coverscale); Shanna (root length)"
 3,,,,,,germinate didn’t take,"Harry (height, leaf#, coverscale); Shanna (root length)"
