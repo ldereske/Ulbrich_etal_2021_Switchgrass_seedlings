@@ -1,0 +1,272 @@
+Plant_Number,root_weight,notes_root,observer_root,date_weighed_root,entry_notes_root,sandy_root,shoot_weight,notes_shoot,observer_shoot,date_weighed_shoot,shoot_height_cm_harvest,coverscale_harvest,harvest_notes,survival_harvest,buds_714,pods_714,shoot_height_cm_tri710,buds_tri710,pods_tri710,coverscale_tri710,notes_tri710,shoot_height_cm_tri702,leaf_no_tri702,leaf_length_tri702,coverscale_tri702,notes_tri702
+1,0.0234,,Audrey Hogenkamp,7/20/2018,,N,0.0139,,Tayler&Lukas,12/17/2018,11.3,2,Broken roots,1,0,3,9.5,2,3,2,A,4.4,4,NA,1,Almost flowering
+2,0.0207,,Audrey Hogenkamp,7/20/2018,,N,0.0089,,Tayler&Lukas,12/17/2018,3.7,2,,1,1,1,3,4,1,1,A,0.6,4,NA,1,weak Stem
+3,0.0334,small pieces of roots (probably not all of the roots?),Audrey Hogenkamp,7/20/2018,,N,0.0201,,Audrey Hogenkamp,7/20/2018,7.5,1,,1,0,3,606,1,3,2,A,3.9,4,2,1,Almost flowering
+4,0.0244,,Audrey Hogenkamp,7/20/2018,,N,0.0154,,Tayler&Lukas,12/17/2018,5,1,linear root,1,1,1,4.5,3,1,1,A,2.3,4,1.5,1,
+5,0.0276,,Audrey Hogenkamp,7/20/2018,,N,0.012,,Tayler&Lukas,12/17/2018,10.5,3,branched,1,2,1,8,4,1,2,A,1.7,3,1.7,1,
+6,0.1032,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.0163,,Tayler&Lukas,12/17/2018,8,1,,1,2,2,8,2,2,1,A,3.2,4,NA,1,
+7,0.0903,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.0114,,Tayler&Lukas,12/17/2018,6.5,1,,1,0,3,6.1,2,3,2,D,1.6,4,1.5,1,
+8,0.036,,Audrey Hogenkamp,7/20/2018,,N,0.0086,,Tayler&Lukas,12/17/2018,1.5,1,,1,1,0,3.9,3,1,1,A,0.7,3,1.5,1,Almost flowering
+9,0.0944,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.01,,Tayler&Lukas,12/17/2018,3.2,3,,1,0,0,3.2,4,2,2,D; doesnt look healthy,1.1,2,1,1,Almost flowering
+10,0.0819,,Audrey Hogenkamp,7/20/2018,,N,0.0089,,Tayler&Lukas,12/17/2018,5.5,2,,1,1,0,5.5,7,0,2,N,3.2,2,1.6,1,
+11,0.0656,,Audrey Hogenkamp,7/20/2018,,N,0.0112,,Tayler&Lukas,12/17/2018,7,1,,1,6,2,6.5,5,2,1,A,3.5,4,1.5,1,
+12,0.0507,,Audrey Hogenkamp,7/20/2018,,N,0.0157,,Tayler&Lukas,12/17/2018,8.6,1,,1,0,3,6.6,1,3,1,A,3.6,4,,1,Almost flowering
+13,0,no plant,Audrey Hogenkamp,7/20/2018,"two ""no plant"" labeled as ""S"" but We are missing ""R""",N,0,no plant,Tayler&Lukas,12/17/2018,0,0,0,0,0,0,0,0,0,0,empty pot,0,NA,NA,NA,2 plants just germinated
+14,0.0918,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.0071,,Tayler&Lukas,12/17/2018,6,2,,1,0,2,5.6,2,2,2,D,2.9,3,1.4,1,
+15,0.1528,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.0074,,Tayler&Lukas,12/17/2018,6.1,2,,1,4,2,5.2,1,2,1,A,2.6,4,1.6,1,
+16,0.1251,"Lots of sand and vermiculite,stuck to stem, may need to add to other root weight",Audrey Hogenkamp,7/20/2018,,Y,0.0312,,Tayler&Lukas,12/17/2018,12.5,2,branched,1,0,4,12.2,2,4,1,A,4.3,3,,1,Almost flowering
+17,0.108,lots of sand in this sample,Tayler&Lukas,12/17/2018,,Y,0.0509,,Audrey Hogenkamp,7/20/2018,14.6,3,,1,10,5,13.7,11,4,2,D,7.3,5,2.2,1,
+18,0.0408,,Tayler&Lukas,12/17/2018,,N,0.0348,,Audrey Hogenkamp,7/20/2018,9.5,1,,1,5,4,9.6,11,4,1,D,6.9,5,2.3,1,Almost flowering
+19,0.031,,Tayler&Lukas,12/17/2018,,N,0.0361,,Audrey Hogenkamp,7/20/2018,21.3,1,,1,8,6,16,7,6,2,D,6.6,5,2,1,Almost flowering
+20,0.0304,,Tayler&Lukas,12/17/2018,,N,0.0099,,Audrey Hogenkamp,7/20/2018,3.6,1,,1,3,0,0.7,0,0,1,N,0,NA,NA,NA,Just germinated
+21,0.0117,,Tayler&Lukas,12/17/2018,,N,0.0227,,Audrey Hogenkamp,7/20/2018,6.5,1,,1,1,10,6.3,5,7,1,A,3.4,4,2,1,Buds emerging
+22,0.0665,,Tayler&Lukas,12/17/2018,,N,0.0221,,Audrey Hogenkamp,7/20/2018,9.6,2,,1,0,2,9.8,4,4,2,D,5,4,,1,
+23,0.0723,,Tayler&Lukas,12/17/2018,,N,0.0191,,Audrey Hogenkamp,7/20/2018,7.5,2,,1,2,4,7.5,1,4,1,D,5,6,,1,Almost flowering
+24,0.0372,,Tayler&Lukas,12/17/2018,,N,0.033,,Audrey Hogenkamp,7/20/2018,11,1,,1,5,6,10.6,5,6,1,A,4,4,,1,Almost flowering
+25,0.0675,,Tayler&Lukas,12/17/2018,,N,0.0278,,Audrey Hogenkamp,7/20/2018,14.5,2,,1,3,5,14.7,8,5,2,A,7.7,4,2.6,1,Almost flowering
+26,0.0528,,Tayler&Lukas,12/17/2018,,N,0.0397,,Audrey Hogenkamp,7/20/2018,16,2,,1,6,4,16,6,4,2,A; *very bendy,9,5,2,2,Almost flowering
+27,0.0588,,Tayler&Lukas,12/17/2018,,N,0.0321,,Audrey Hogenkamp,7/20/2018,20,2,,1,6,7,15.1,7,8,2,D,5.5,5,,1,Almost flowering
+28,0.0289,,Tayler&Lukas,12/17/2018,,N,0.0351,,Audrey Hogenkamp,7/20/2018,7.5,2,,1,2,6,6.7,6,5,1,4D/1A,4.8,6,,1,actvitely flowering
+29,0.0338,,Tayler&Lukas,12/17/2018,,N,0.0418,,Audrey Hogenkamp,7/20/2018,11,2,,1,0,7,10,5,4,1,D,6.7,4,1.8,1,Almost flowering
+30,0.0103,,Tayler&Lukas,12/17/2018,,N,0.0447,,Audrey Hogenkamp,7/20/2018,20,2,,1,1,10,16,4,8,2,6D/1A,10.1,5,2,1,Almost flowering
+31,0.033,,Tayler&Lukas,12/17/2018,,N,0.0054,,Audrey Hogenkamp,7/20/2018,5.5,1,,1,0,2,5.1,0,2,3,D,3.4,4,1.3,1,holes in leaves
+32,0.0484,,Tayler&Lukas,12/17/2018,,N,0.0074,,Audrey Hogenkamp,7/20/2018,4.5,1,,1,0,0,3.4,4,0,2,N,2.5,4,1.6,1,
+33,0.0977,,Tayler&Lukas,12/17/2018,,N,0.0258,,Audrey Hogenkamp,7/20/2018,5.3,1,,1,2,0,5.4,4,0,1,N,2.6,4,1.8,1,
+34,0.0321,,Tayler&Lukas,12/17/2018,,N,0.0093,,Audrey Hogenkamp,7/20/2018,6.5,1,,1,0,1,5.9,4,1,1,A,2.5,4,1.9,1,
+35,0.0083,,Tayler&Lukas,12/19/2018,,N,0.0089,,Audrey Hogenkamp,7/20/2018,7.2,1,,1,0,2,7.2,1,2,2,D,4.8,4,1.6,1,Almost flowering
+36,0.0123,,Tayler&Lukas,12/19/2018,,N,0.0102,,Audrey Hogenkamp,7/20/2018,5,4,,1,0,2,5.2,2,2,3,D,3.9,4,1.7,1,
+37,0.0219,,Tayler&Lukas,12/19/2018,,N,0.004,,Audrey Hogenkamp,7/20/2018,4.1,2,,1,0,1,3.7,1,1,1,A,3.2,2,1.4,1,
+38,0.0288,,Tayler&Lukas,12/19/2018,,N,0.0014,,Audrey Hogenkamp,7/20/2018,2.7,3,,1,0,0,2.6,0,0,3,N; leaf looks eaten,2.2,3,1.6,1,dicot removed
+39,0.0301,,Tayler&Lukas,12/19/2018,,N,0.0088,,Audrey Hogenkamp,7/20/2018,4.5,1,,1,4,0,3.1,3,0,1,N,3,3,1.1,1,
+40,0.0377,,Tayler&Lukas,12/19/2018,,N,0.0145,,Audrey Hogenkamp,7/20/2018,6.1,1,,1,3,1,6,2,1,2,A,3.3,4,1.7,1,
+41,0.03,,Tayler&Lukas,12/19/2018,,N,0.0086,,Audrey Hogenkamp,7/20/2018,7.1,2,,1,0,2,6.9,3,2,2,A,3.7,4,1.6,1,
+42,0.0325,,Tayler&Lukas,12/19/2018,,N,0.0163,,Audrey Hogenkamp,7/20/2018,4,2,,1,0,0,2.6,3,0,1,N,1.9,3,1.8,1,
+43,0.0124,,Tayler&Lukas,12/19/2018,,N,0.0037,,Audrey Hogenkamp,7/20/2018,4.6,3,,1,4,1,2.7,1,1,3,D,2.3,2,1.2,1,
+44,0.0193,,Tayler&Lukas,12/19/2018,,N,0.0015,,Audrey Hogenkamp,7/20/2018,4.2,3,,1,2,2,3.7,0,2,2,A,2.1,3,1.3,2,
+45,0.0142,,Tayler&Lukas,12/19/2018,,N,0.0634,,Audrey Hogenkamp,7/20/2018,4.3,2,,1,3,1,4.1,1,1,2,A,1.9,3,1.3,1,
+46,0,dead,Tayler&Lukas,12/19/2018,,N,0,dead,Audrey Hogenkamp,7/20/2018,0,5,Dead,0,0,0,0,0,0,5,dead,1.8,4,,2,
+47,0.0447,,Tayler&Lukas,12/19/2018,,N,0.0143,,Audrey Hogenkamp,7/20/2018,8,1,,1,5,4,8.5,5,4,2,A,4.9,5,2,1,Almost flowering
+48,0.0596,,Tayler&Lukas,12/19/2018,,N,0.0286,,Audrey Hogenkamp,7/20/2018,8.8,2,,1,9,4,7,11,4,3,D,4.4,5,1.8,1,Almost flowering
+49,0.0282,,Tayler&Lukas,12/19/2018,,N,0.0073,,Audrey Hogenkamp,7/20/2018,6.5,2,,1,9,2,6.2,2,2,2,A,3.6,4,1.3,1,
+50,0.0377,,Tayler&Lukas,12/19/2018,,N,0.011,,Audrey Hogenkamp,7/20/2018,6.5,1,,1,2,0,6.4,0,2,1,A,3.7,4,1.8,2,
+51,0,dead,Tayler&Lukas,12/19/2018,,N,0,dead,Tayler&Lukas,12/17/2018,0,0,,0,0,0,0,0,0,0,empty pot,NA,NA,NA,NA,Removed plant
+52,0.0231,,Tayler&Lukas,12/19/2018,,N,0.0209,,Tayler&Lukas,12/17/2018,6.3,1,,1,6,1,5.1,5,2,2,1D/1A,3,4,,1,Almost flowering
+53,0.0428,,Tayler&Lukas,12/19/2018,,N,0.0073,,Tayler&Lukas,12/17/2018,5.4,3,Eaten,1,0,0,5.3,0,0,3,N; looks eaten,4.5,4,,1,Almost flowering
+54,0.0823,,Tayler&Lukas,12/19/2018,,N,0.0169,,Tayler&Lukas,12/17/2018,6.1,2,,1,6,3,6.6,13,3,2,2D/1A,3.5,4,2,1,Almost flowering
+55,0.0466,,Tayler&Lukas,12/19/2018,,N,0.0267,,Tayler&Lukas,12/17/2018,12.5,1,,1,2,1,12.1,5,1,1,D,8.8,8,,1,Almost flowering
+56,NA,no plant,Tayler&Lukas,12/19/2018,,N,NA,no plant,Tayler&Lukas,12/17/2018,NA,NA,,NA,NA,NA,NA,NA,NA,NA,empty pot,NA,NA,NA,NA,
+57,0.068,,Tayler&Lukas,12/19/2018,,N,0.094,,Tayler&Lukas,12/17/2018,12.3,2,,1,5,4,12,6,4,2,D,5.2,5,2,1,Almost flowering
+58,0.0351,,Tayler&Lukas,12/19/2018,,N,0.041,,Tayler&Lukas,12/17/2018,7.5,3,,1,1,3,7.1,3,3,1,A,4,4,2.1,1,Almost flowering
+59,0.1595,,Tayler&Lukas,12/19/2018,,N,0.0182,,Tayler&Lukas,12/17/2018,7,1,,1,7,3,9.5,9,3,2,D,7.1,5,1.6,1,buds emerging
+60,0.0827,,Tayler&Lukas,12/19/2018,,N,0.0184,,Tayler&Lukas,12/17/2018,7.9,2,,1,0,2,8.6,0,2,2,D,6,5,1.4,2,Almost flowering
+61,0.0624,,Tayler&Lukas,12/19/2018,,N,0.047,,Tayler&Lukas,12/17/2018,8.5,1,,1,1,2,8.4,3,2,1,A,2.2,4,1.8,1,Almost flowering
+62,0.0306,,Tayler&Lukas,12/19/2018,,N,0.0136,,Tayler&Lukas,12/17/2018,2.5,1,,1,6,1,3,2,1,2,N,2.2,4,,1,Almost flowering
+63,0.0327,,Tayler&Lukas,12/19/2018,,N,0.0086,,Tayler&Lukas,12/17/2018,8,1,,1,0,3,6.2,3,2,2,A,1.7,4,1.7,1,
+64,0.0215,,Tayler&Lukas,12/19/2018,,N,0.0081,,Tayler&Lukas,12/17/2018,4.5,1,,1,0,1,4.4,3,1,2,D,2.5,3,,1,
+65,0.0079,,Tayler&Lukas,12/19/2018,,N,0.0073,,Tayler&Lukas,12/17/2018,3,1,,1,0,1,3.2,1,1,1,A,NA,4,,3,Stem too curly to measure height
+66,0.0442,,Tayler&Lukas,12/19/2018,,N,0.0119,,Tayler&Lukas,12/17/2018,4,1,,1,8,2,5.7,4,2,1,1D/1A,4,3,,1,
+67,0.046,,Tayler&Lukas,12/19/2018,,N,0.0071,,Tayler&Lukas,12/17/2018,2.5,1,,1,0,1,3.1,2,1,1,A; flowers almost dead,1.8,4,,1,
+68,0.0381,,Tayler&Lukas,12/19/2018,,N,0.0142,,Tayler&Lukas,12/17/2018,4,1,,1,0,2,6.4,0,2,2,A,1.5,4,1.5,1,Almost flowering
+69,0.0617,,Tayler&Lukas,12/19/2018,,N,0.0229,,Tayler&Lukas,12/17/2018,6.4,1,,1,3,1,8.4,1,1,2,A,3.4,3,1.7,1,
+70,0.0097,,Tayler&Lukas,12/19/2018,,N,0.0121,,Tayler&Lukas,12/17/2018,5.5,1,,1,3,1,6.1,7,1,3,A,2.1,3,,1,
+71,0.0075,,Tayler&Lukas,12/19/2018,,N,0.0063,,Tayler&Lukas,12/17/2018,1,1,,1,0,0,0.5,1,0,1,N,1.2,5,,1,
+72,0.0121,,Tayler&Lukas,12/19/2018,,N,0.0108,,Tayler&Lukas,12/17/2018,4,1,,1,0,2,5.5,2,2,2,A,1.7,3,,1,
+73,0.0255,,Harry Ervin,7/23/2018,,N,0.0115,,Audrey Hogenkamp,7/20/2018,8.1,1,Another FP was discovered under soil,1,3,1,6,1,1,2,A,1,4,,1,
+74,0.0763,,Harry Ervin,7/23/2018,,N,0.0116,,Audrey Hogenkamp,7/20/2018,3,1,,1,0,2,4,1,2,2,D,1.5,3,,1,
+75,0.0815,,Harry Ervin,7/23/2018,,N,0.0151,,Audrey Hogenkamp,7/20/2018,3.5,1,,1,0,3,4.6,0,3,2,A,1.3,3,1.7,1,
+76,0.0728,,Harry Ervin,7/23/2018,,N,0.0377,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,13.4,2,Purple Leaves,1,7,9,14.4,5,9,2,D,7.1,7,,1,Almost flowering
+77,0.0446,,Harry Ervin,7/23/2018,,N,0.0204,,Tayler&Lukas,12/17/2018,7.5,1,,1,4,3,7.9,7,3,1,A,2.5,5,,1,Almost flowering
+78,0.0169,,Audrey Hogenkamp,7/25/2018,,N,0.0264,,Audrey Hogenkamp,7/25/2018,12.5,2,,1,2,4,14.4,1,4,2,A,7.8,5,2.4,1,Almost flowering
+79,0.0659,,Harry Ervin,7/23/2018,,N,0.0324,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,11.5,1,,1,7,5,11.6,2,5,1,A,5.3,5,,2,Almost flowering
+80,0.1132,,Harry Ervin,7/23/2018,,N,0.059,,Audrey Hogenkamp,7/20/2018,19,1,,1,5,4,16.1,5,6,1,A,8,6,1.9,1,emergin buds
+81,0.0313,,Audrey Hogenkamp,7/25/2018,,N,0.0265,,Audrey Hogenkamp,7/25/2018,15.5,1,,1,5,4,14.1,6,4,3,D,9.2,5,2.1,2,
+82,0.1775,,Harry Ervin,7/23/2018,,N,0.0882,,Audrey Hogenkamp,7/20/2018,15.5,2,,1,7,4,13.6,4,5,3,D; floppy,10.6,4,1.9,1,Almost flowering
+83,0.1313,,Harry Ervin,7/23/2018,,N,0.0861,,Audrey Hogenkamp,7/20/2018,9.5,1,,1,5,2,8.1,3,2,2,D,3,4,,1,
+84,0.0434,,Audrey Hogenkamp,7/25/2018,,N,0.0302,,Audrey Hogenkamp,7/25/2018,14,2,,1,4,5,13,7,5,1,D,6,6,,1,
+85,0.1096,,Harry Ervin,7/23/2018,,N,0.0641,,Audrey Hogenkamp,7/20/2018,16.5,2,,1,5,5,16.5,7,6,1,A,8.1,6,,1,Almost flowering
+86,0.099,,Harry Ervin,7/23/2018,,N,0.0642,,Audrey Hogenkamp,7/20/2018,15.5,2,,1,3,6,14.5,0,5,2,A,5.9,5,,1,Almost flowering
+87,0.0636,,Audrey Hogenkamp,7/25/2018,,N,0.033,,Audrey Hogenkamp,7/25/2018,15.4,2,,1,2,5,14,3,5,2,A,10.6,7,2,2,emergin buds
+88,0.2475,lots of soil,Harry Ervin,7/23/2018,,Y,0.0332,,Audrey Hogenkamp,7/20/2018,13,2,,1,0,6,12.6,1,5,2,D,10.3,6,2.1,2,emergin buds
+89,0.0754,,Harry Ervin,7/23/2018,,N,0.0206,,Audrey Hogenkamp,7/20/2018,18.2,2,,1,0,3,18.5,0,5,2,A,12.4,5,2.3,1,Almost flowering
+90,0.0292,,Audrey Hogenkamp,7/25/2018,,N,0.0246,,Audrey Hogenkamp,7/25/2018,8,2,,1,0,2,7.4,6,2,2,A,4.9,6,1.5,1,Almost flowering
+91,0.0476,,Harry Ervin,7/23/2018,,N,0.0043,,Audrey Hogenkamp,7/20/2018,6.7,2,,1,0,1,6.7,1,1,3,N,4.2,3,1.3,1,
+92,0.027,,Harry Ervin,7/23/2018,,N,0.007,,Audrey Hogenkamp,7/20/2018,5.6,2,,1,2,1,5.6,3,2,3,A,3.3,4,1.6,1,
+93,0.0429,,Harry Ervin,7/23/2018,,N,0.0065,,Audrey Hogenkamp,7/20/2018,6,1,,1,2,1,5.4,2,0,1,A,3.1,4,1.6,1,
+94,0.0138,,Harry Ervin,7/23/2018,,N,0.0074,,Audrey Hogenkamp,7/20/2018,6.3,1,Looks eaten,1,0,1,6.2,1,2,2,A,3.8,3,2,1,
+95,0.0296,,Harry Ervin,7/23/2018,,N,0.003,,Audrey Hogenkamp,7/20/2018,6.6,2,all leaves gone,1,0,1,7.6,5,1,2,D,2.9,4,1.7,1,
+96,0.0341,,Harry Ervin,7/23/2018,,N,0.0075,,Audrey Hogenkamp,7/20/2018,5.8,1,,1,2,1,604,0,1,3,D,3.7,3,1.7,1,
+97,0.0318,,Harry Ervin,7/23/2018,,N,0.0053,,Audrey Hogenkamp,7/20/2018,4.6,2,,1,4,2,502,1,1,3,D,2.5,3,1.3,1,
+98,NA,dropped and lost sample,Harry Ervin,7/23/2018,,N,0.0049,,Audrey Hogenkamp,7/20/2018,2.1,2,Looks eaten,1,0,0,2,0,0,3,N; looks eaten,2.5,3,1.5,1,Almost flowering
+99,0.025,,Harry Ervin,7/23/2018,,N,0.0042,,Audrey Hogenkamp,7/20/2018,4,2,,1,0,1,4.5,3,1,2,D,3.5,3,1.5,1,Almost flowering
+100,NA,,Audrey Hogenkamp,7/25/2018,one measurement,N,NA,,Audrey Hogenkamp,7/25/2018,NA,NA,,NA,NA,NA,NA,NA,NA,NA,empty pot,7.5,4,1.8,1,Shanna Killed; Almost flowering
+101,0.1208,,Harry Ervin,7/23/2018,,N,0.0096,,Audrey Hogenkamp,7/20/2018,5.5,2,,1,0,1,5.1,3,1,2,N,2.8,4,1.7,1,
+102,0.0068,,Audrey Hogenkamp,7/25/2018,,N,0.0093,,Audrey Hogenkamp,7/25/2018,10,2,,1,0,3,8.7,2,3,3,D,5.6,5,2.1,1,Almost flowering
+103,0.035,,Tayler&Lukas,12/17/2018,,N,0.0129,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,2.2,1,,1,5,1,2.8,2,1,3,A,1.8,4,1.6,1,
+104,NA,empty pot,Tayler&Lukas,12/17/2018,,N,NA,empty pot,Audrey Hogenkamp,7/20/2018,,,,NA,NA,NA,NA,NA,NA,NA,empty pot,NA,NA,NA,NA,
+105,0.0064,,Tayler&Lukas,12/17/2018,,N,0.0108,,Audrey Hogenkamp,7/20/2018,3.9,1,,1,0,1,4.5,2,1,2,D,2.5,4,1.5,1,
+106,0.1714,,Harry Ervin,7/23/2018,,N,0.0131,,Audrey Hogenkamp,7/20/2018,8,2,Bendy Plant,1,4,3,7*,9,3,2,D; *very bent,5.8,4,,1,Almost flowering
+107,0.0485,,Tayler&Lukas,12/17/2018,,N,0.0142,additional shoots attached to roots- added to other shoots,Audrey Hogenkamp,7/20/2018,9.6,2,,1,4,3,9.7,6,3,2,A,3.9,4,1.9,1,Almost flowering
+108,0.0107,,Audrey Hogenkamp,7/25/2018,,N,0.0144,,Audrey Hogenkamp,7/25/2018,9.6,1,,1,5,4,9.7,11,4,2,D,6.5,5,,1,Almost flowering
+109,0.0303,,Tayler&Lukas,12/17/2018,,N,0.0219,,Audrey Hogenkamp,7/20/2018,10,2,,1,6,0,10.7,16,0,2,N,8.8,5,2.3,1,Almost flowering
+110,NA,NO DATA,,,data is missing from weight data sheets,N,NA,NO DATA,,,NA,NA,,NA,NA,NA,NA,NA,NA,NA,empty pot,NA,NA,NA,NA,
+111,0.0164,,Audrey Hogenkamp,7/25/2018,,N,0.0073,,Audrey Hogenkamp,7/25/2018,7.1,1,,1,4,2,7,8,2,3,D,5.8,4,1.9,1,Almost flowering
+112,0.0725,,Tayler&Lukas,12/17/2018,,N,0.0159,,Audrey Hogenkamp,7/20/2018,2.3,3,,1,0,2,7.4,5,2,2,D,4.6,4,1.7,1,Almost flowering
+113,0.0171,,Audrey Hogenkamp,7/20/2018,,N,0.0173,,Audrey Hogenkamp,7/20/2018,11.2,3,,1,0,2,10.9,3,2,2,D,9,4,1.6,1,Almost flowering
+114,0.0188,,Audrey Hogenkamp,7/25/2018,I think this was mistakenly put in the unweighed pile,N,0.0082,,Audrey Hogenkamp,7/25/2018,5.6,2,,1,4,2,5.1,7,2,3,D,4,4,,1,
+115,0.1316,,Harry Ervin,7/23/2018,,N,0.022,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,11.9,2,,1,2,3,12.1,3,4,2,D,9.1,5,2.3,2,Almost flowering
+116,0.3273,,Harry Ervin,7/23/2018,,N,0.025,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,11.3,1,,1,0,3,11.9,4,3,1,D,6.8,4,2.3,1,Almost flowering
+117,0.2385,,Harry Ervin,7/23/2018,,N,0.0178,,Audrey Hogenkamp,7/20/2018,9.3,1,,1,0,2,9.1,4,2,2,A,6.6,4,1.9,1,curly stem
+118,0.089,,Harry Ervin,7/23/2018,,N,0.0221,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,10.4,2,,1,2,3,11,2,3,2,D,6.1,5,2.1,1,Almost flowering
+119,0.0766,,Harry Ervin,7/23/2018,,N,0.0117,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,8.3,2,,1,5,2,8.7,3,2,2,D,6.7,7,1.8,2,Almost flowering
+120,NA,NO DATA,,,data is missing from weight data sheets,N,NA,NO DATA,,,NA,NA,,NA,NA,NA,NA,NA,NA,NA,empty pot,NA,NA,NA,NA,
+121,0.0613,,Harry Ervin,7/23/2018,,N,0.0139,,Audrey Hogenkamp,7/20/2018,5.8,1,,1,0,2,5.3,2,2,3,A,1.8,3,,1,removed plant with 4 leaves
+122,0.0561,,Harry Ervin,7/23/2018,,N,0.0058,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,5.3,1,,1,2,1,5.5,0,4,1,D,3.2,3,,1,Almost flowering
+123,0.0207,,Harry Ervin,7/23/2018,,N,0.0155,,Audrey Hogenkamp,7/20/2018,5,1,,1,3,2,4.2,0,2,1,D,2.3,3,,1,
+124,0,empty,Harry Ervin,7/23/2018,,N,0,empty pot,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,0,5,dead,0,0,0,0,0,0,5,DEAD,0,0,0,5,
+125,0.0213,,Harry Ervin,7/23/2018,,N,0.0137,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,5.6,2,,1,0,1,5.6,1,1,2,D,3.9,4,,1,
+126,0.0337,,Harry Ervin,7/23/2018,,N,0.0136,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,4.1,1,,1,1,1,4.1*,3,1,3,*very curled,2,3,,1,very curly stem
+127,0.0951,,Harry Ervin,7/23/2018,,N,0.0087,,Audrey Hogenkamp,7/20/2018,5.6,2,,1,0,1,6.5,1,1,2,A,3,4,1.2,1,
+128,0.0039,,Harry Ervin,7/23/2018,,N,0.0342,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,4.6,1,,1,6,2,5.4,10,2,1,D,2.6,4,,1,Almost flowering
+129,0.0243,,Harry Ervin,7/23/2018,,N,0.0129,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,5,1,,1,3,2,4,6,0,1,N,0.6,3,,1,removed clover; Almost flowering
+130,0.0095,,Tayler&Lukas,12/17/2018,,N,0.0218,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,3.4,2,,1,0,1,4.2,0,0,1,N,1.9,4,,1,
+131,0.0668,,Harry Ervin,7/23/2018,,N,0.0136,,Audrey Hogenkamp,7/20/2018,3.3,1,,1,0,2,4.6,2,2,2,A,1.9,3,,1,
+132,0,empty,Tayler&Lukas,12/17/2018,,N,0,empty pot,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,0,5,dead,0,0,0,0,0,0,0,empty pot,0.9,1,,4,Almost dead (Hanging on)
+133,0.0046,,Tayler&Lukas,12/17/2018,,N,0.0332,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,3.6,1,,1,0,1,3.5,3,1,1,A,0.8,3,1.6,1,
+134,0.0173,,Tayler&Lukas,12/17/2018,,N,0.0267,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,6.2,2,,1,0,2,5.8,3,2,2,A,2.9,4,1.8,1,
+135,0.012,,Tayler&Lukas,12/17/2018,,N,0.0171,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,5,1,,1,2,2,4.5,2,2,2,A,3.4,4,1.7,1,
+136,0.0723,,Tayler&Lukas,12/17/2018,,N,0.0343,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,15.5,1,,1,7,5,15.3,8,5,2,D,8.2,4,2.2,1,Almost flowering
+137,0.0906,,Harry Ervin,7/23/2018,,N,0.0532,,Audrey Hogenkamp,7/20/2018,13,2,,1,0,2,13,4,4,1,A,3.2,5,,1,
+138,0.0128,,Audrey Hogenkamp,7/25/2018,,N,0.0251,,Audrey Hogenkamp,7/25/2018,16.8,2,,1,6,4,17.6,2,5,1,A,7.3,4,2.1,1,Almost flowering
+139,0.0434,,Tayler&Lukas,12/17/2018,,N,0.0336,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,11,2,,1,9,1,11.2,12,1,2,D,7.6,5,,2,buds emerging
+140,0.1344,,Harry Ervin,7/23/2018,,N,0.015,,Audrey Hogenkamp,7/20/2018,6.4,2,,1,0,0,6.3,7,0,2,N,2.2,4,1.6,2,
+141,0.0076,,Audrey Hogenkamp,7/25/2018,,N,0.0216,,Audrey Hogenkamp,7/25/2018,10.2,1,,1,0,6,9.5,0,7,2,D,5.3,5,1.8,2,Almost flowering
+142,0.0969,,Harry Ervin,7/23/2018,,N,0.0339,,Audrey Hogenkamp,7/20/2018,10.8,2,,1,0,5,10.4,12,2,2,A,4.8,4,,1,Almost flowering
+143,0.064,,Harry Ervin,7/23/2018,,N,0.0176,,Audrey Hogenkamp,7/20/2018,7.7,2,,1,7,3,8.2,4,3,2,D,3.7,5,1.2,1,Almost flowering
+144,0.0317,,Audrey Hogenkamp,7/25/2018,,N,0.0182,,Audrey Hogenkamp,7/25/2018,13,2,,1,4,6,12.8,2,4,2,A,6,4,1.5,1,Almost flowering
+145,0.0882,,Harry Ervin,7/23/2018,,N,0.0395,,Audrey Hogenkamp,7/20/2018,12.2,2,,1,3,9,13.1,2,7,1,A,5.9,7,,2,Almost flowering
+146,0.2349,,Harry Ervin,7/23/2018,,N,0.0558,,Audrey Hogenkamp,7/20/2018,17,1,,1,3,6,16,6,5,1,2A/3D,8,5,2.1,1,Almost flowering
+147,0.0509,,Audrey Hogenkamp,7/25/2018,,N,0.0411,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,17.2,1,,1,4,6,17.5,0,6,1,A,7,6,,1,Almost flowering
+148,0.0227,,Harry Ervin,7/23/2018,,N,0.0276,,Audrey Hogenkamp,7/20/2018,13.4,1,,1,5,3,10.7,3,3,1,A,3.4,5,1.7,1,Almost flowering
+149,0.1413,,Harry Ervin,7/23/2018,,N,0.048,,Audrey Hogenkamp,7/20/2018,9.4,1,,1,8,2,9.9,5,2,1,A,5.4,4,,1,Almost flowering
+150,0.0328,,Audrey Hogenkamp,7/25/2018,,N,0.0218,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,10.4,2,Purple Leaves,1,2,3,10.7,1,3,3,D,7.7,4,2.1,2,Almost flowering
+151,0.1404,,Harry Ervin,7/23/2018,,N,0.0132,,Audrey Hogenkamp,7/20/2018,7.4,2,,1,5,2,6.9,8,2,3,A,3.5,4,,1,Almost flowering
+152,0.1927,,Harry Ervin,7/23/2018,,N,0.0114,,Audrey Hogenkamp,7/20/2018,6.1,2,,1,0,1,6.4,5,1,3,N,4,3,2.2,1,
+153,0.0959,,Harry Ervin,7/23/2018,,N,0.0118,,Audrey Hogenkamp,7/20/2018,7.9,4,,1,0,2,8.2,1,2,3,D,5,6,,1,Leaves covering bulbs
+154,0,dead,Harry Ervin,7/23/2018,,N,0,dead,Audrey Hogenkamp,7/20/2018,0,5,Dead,0,0,0,0,0,0,0,empty pot,0,0,0,5,
+155,0,dead,Harry Ervin,7/23/2018,,N,0,dead,Audrey Hogenkamp,7/20/2018,0,5,Dead,0,0,0,0,0,0,5,DEAD,5.6,4,,4,Might be dead - very wilted and roots dislodged
+156,0.0364,,Harry Ervin,7/23/2018,,N,0.0056,,Audrey Hogenkamp,7/20/2018,2.6,3,,1,0,1,2.4,3,1,3,N,1.5,4,1.2,1,
+157,0.1636,,Harry Ervin,7/23/2018,,N,0.011,,Audrey Hogenkamp,7/20/2018,2.7,1,,1,4,2,3.6,1,2,2,D,2.2,2,1.6,1,
+158,0.1038,,Harry Ervin,7/23/2018,,N,0.011,,Audrey Hogenkamp,7/20/2018,5.5,2,,1,0,1,5.7,1,1,3,D,2.7,4,1.7,1,
+159,0.0556,,Harry Ervin,7/23/2018,,N,0.0154,,Audrey Hogenkamp,7/20/2018,2,2,,1,0,0,2.1,2,0,2,N,1.5,3,1.4,1,
+160,0.0498,,Harry Ervin,7/23/2018,,N,0.0035,,Audrey Hogenkamp,7/20/2018,5.1,2,,1,1,1,4.9,2,1,3,D,3.7,3,1.7,1,Almost flowering
+161,0.0716,,Harry Ervin,7/23/2018,,N,0.0092,,Audrey Hogenkamp,7/20/2018,4.5,2,,1,0,0,5,2,0,1,A,3.3,3,1.8,1,
+162,0.0801,,Harry Ervin,7/23/2018,,N,0.0086,,Audrey Hogenkamp,7/20/2018,5.6,2,,1,2,2,7.1,1,2,2,A,5.8,4,1.4,1,
+163,0.0996,,Harry Ervin,7/23/2018,,N,0.0118,,Audrey Hogenkamp,7/20/2018,4.2,1,,1,0,2,4.5,0,1,2,A,1.4,3,1.3,1,
+164,0.2001,,Harry Ervin,7/23/2018,,N,0.0082,,Audrey Hogenkamp,7/20/2018,5.7,2,,1,3,2,6.5,1,2,2,A; 1/2 water treatment,3.5,4,1.6,1,
+165,0.1013,,Harry Ervin,7/23/2018,,N,0.006,,Audrey Hogenkamp,7/20/2018,3.1,1,,1,0,1,3,2,1,1,A,1.9,3,1.6,1,
+166,0.2271,,Harry Ervin,7/23/2018,,N,0.0306,,Audrey Hogenkamp,7/20/2018,14.6,2,,1,3,6,14.5,3,6,2,A,9.2,4,2.9,1,Almost flowering
+167,0.1531,,Harry Ervin,7/23/2018,,N,0.0593,,Audrey Hogenkamp,7/20/2018,12.1,2,,1,0,3,12.2,0,3,2,D,9.1,4,,1,Almost flowering
+168,0.0167,,Audrey Hogenkamp,7/25/2018,,N,0.0174,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,9.2,1,,1,2,2,9.5,7,2,2,D,8.1,5,2,1,buds emerging
+169,0.0851,,Harry Ervin,7/23/2018,,N,0.0218,,Audrey Hogenkamp,7/20/2018,5.9,2,,1,5,1,5.6,18,1,2,A,4.5,4,1.9,1,Almost flowering
+170,0.2063,,Harry Ervin,7/23/2018,,N,0.0187,,Audrey Hogenkamp,7/20/2018,8,2,,1,3,0,8.1,6,1,2,A,6.5,5,1.6,1,Almost flowering
+171,0.0058,,Audrey Hogenkamp,7/25/2018,,N,0.0112,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,5,2,,1,0,0,5.4,3,0,2,A,4.4,6,,1,buds emerging
+172,NA,NO DATA,,,data is missing from weight data sheets,N,NA,NO DATA,,,NA,NA,,NA,NA,NA,NA,NA,NA,NA,empty pot,NA,NA,NA,NA,
+173,0.2385,,Harry Ervin,7/23/2018,,N,0.0272,,Audrey Hogenkamp,7/20/2018,13.5,2,Purple Leaves,1,0,5,13,0,5,2,D,11,5,,1,Almost flowering
+174,0.009,,Audrey Hogenkamp,7/25/2018,,N,0.0114,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,9.6,2,Purple Leaves,1,0,0,10,2,2,2,A,5.5,3,1.7,1,Almost flowering
+175,0.1498,,Harry Ervin,7/23/2018,,N,0.038,,Audrey Hogenkamp,7/20/2018,13.1,1,,1,0,5,13,0,4,1,A,8.2,5,2.4,1,Almost flowering
+176,0.0369,,Harry Ervin,7/23/2018,,N,0.0216,,Audrey Hogenkamp,7/20/2018,10.1,2,,1,4,3,10,5,3,2,D,6.8,5,1.8,1,
+177,0.0312,,Audrey Hogenkamp,7/25/2018,,N,0.0184,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,10.1,3,,1,3,2,10.6,3,2,2,D,8.5,6,1.7,1,Almost flowering
+178,0.0597,,Harry Ervin,7/23/2018,,N,0.025,,Audrey Hogenkamp,7/20/2018,5,1,,1,0,1,5.5,3,1,2,D,3.3,4,,1,
+179,0.056,,Harry Ervin,7/23/2018,,N,0.0281,,Audrey Hogenkamp,7/20/2018,5.4,3,,1,0,2,5.5,2,0,3,A,3.6,4,1.4,1,
+180,0.0142,,Audrey Hogenkamp,7/25/2018,,N,0.0114,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,7.6,2,No leaves,1,0,2,7.3,5,2,2,D,4,5,,2,Almost flowering
+181,0.0822,,Harry Ervin,7/23/2018,,N,0.0265,,Audrey Hogenkamp,7/20/2018,4.2,2,,1,0,1,2.5,4,0,1,N,2.4,4,1.8,1,
+182,0.0231,,Harry Ervin,7/23/2018,,N,0.0604,,Audrey Hogenkamp,7/20/2018,7.6,2,,1,2,0,1.2,2,0,2,N,1.3,3,,3,stem curled
+183,0.0277,,Harry Ervin,7/23/2018,,N,0.0277,,Audrey Hogenkamp,7/20/2018,8.5,2,No leaves,1,2,2,8.2,2,3,3,D,4.2,3,2.1,1,AF
+184,NA,NO DATA,,,data is missing from weight data sheets,N,NA,NO DATA,,,NA,NA,,NA,NA,NA,NA,NA,NA,NA,empty pot,NA,NA,NA,NA,
+185,0.093,,Harry Ervin,7/23/2018,,N,0.0129,,Audrey Hogenkamp,7/20/2018,1.6,1,Single leaf,1,0,0,1.4,0,0,1,N; single leaf,1.5,1,,3,
+186,0,NO DATA,,,data is missing from weight data sheets,N,0,NO DATA,,,0,5,,0,0,0,0,0,0,0,empty pot,NA,NA,NA,NA,"just germinated, dislogdeg from dirt"
+187,0,NO DATA,,,data is missing from weight data sheets,N,0,NO DATA,,,0,5,dead,0,0,0,0,0,0,0,empty pot,NA,NA,NA,NA,
+188,0.018,,Harry Ervin,7/23/2018,,N,0.0122,,Audrey Hogenkamp,7/20/2018,4.2,1,,1,2,2,4,0,2,1,D,2.6,4,,1,almost flowering
+189,0.0301,,Harry Ervin,7/23/2018,,N,0.0262,,Audrey Hogenkamp,7/20/2018,6,1,,1,2,1,6,5,1,2,A,1,4,1.8,1,
+190,0.0046,,Tayler&Lukas,12/17/2018,,N,0.0078,,Audrey Hogenkamp,7/20/2018,6.3,2,,1,0,3,6.2,0,2,2,D,4.5,4,,1,
+191,0.0061,,Tayler&Lukas,12/19/2018,,N,0.0082,,Audrey Hogenkamp,7/20/2018,8.9,2,,1,1,2,8.4,1,1,2,A,3.6,4,1.6,1,
+192,0.0992,Lots of sand and vermiculite too hard to separate from seedlings,Audrey Hogenkamp,7/20/2018,,Y,0.0163,,Audrey Hogenkamp,7/20/2018,5.7,3,,1,0,1,5.6,2,1,2,D,3.5,4,1.5,,
+193,0.152,small pieces of roots (probably not all of the roots?),Audrey Hogenkamp,7/20/2018,,N,0.0166,,Audrey Hogenkamp,7/20/2018,3.9,2,,1,1,0,2,3,0,1,N,1.5,4,,1,
+194,0.0189,,Audrey Hogenkamp,7/20/2018,,N,0.0137,,Audrey Hogenkamp,7/20/2018,6,2,,1,1,0,4.8,5,0,1,A,1.9,4,,1,
+195,0.0293,,Audrey Hogenkamp,7/20/2018,,N,0.0106,,Audrey Hogenkamp,7/20/2018,5.6,,,1,0,2,6,2,2,2,A,4,5,,1,
+196,0.0172,,Audrey Hogenkamp,7/20/2018,,N,0.0205,,Audrey Hogenkamp,7/20/2018,10,2,,1,8,4,8.3,6,3,1,A,2.4,4,,1,
+197,0.0214,,Audrey Hogenkamp,7/20/2018,,N,0.0558,,Audrey Hogenkamp,7/20/2018,16.1,4,,1,2,8,13.5,4,6,2,A,7.6,5,2.2,1,AF
+198,0.0084,,Audrey Hogenkamp,7/25/2018,,N,0.0288,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,14.2,3,,1,4,5,14,0,5,2,A,7,6,2.1,1,almost flowering
+199,0.0144,,Tayler&Lukas,12/17/2018,,N,0.0909,,Audrey Hogenkamp,7/20/2018,14.4,3,,1,0,2,12.2,7,0,2,N,9.6,5,2.2,1,emerging buds 
+200,0.0654,,Tayler&Lukas,12/17/2018,,N,0.0212,,Audrey Hogenkamp,7/20/2018,12.8,3,,1,0,5,12.2,2,6,2,A,6.4,5,2.1,1,AF
+201,0.0058,,Audrey Hogenkamp,7/25/2018,,N,0.0245,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,15.4,3,,1,0,5,14.5,2,5,1,A,8.2,4,1.5,2,AF
+202,0.0228,,Tayler&Lukas,12/17/2018,,N,0.0238,,Audrey Hogenkamp,7/20/2018,5.7,2,,1,4,1,6.5,5,1,2,N,2,4,,1,almost flowering
+203,0.0757,,Tayler&Lukas,12/17/2018,,N,0.052,,Audrey Hogenkamp,7/20/2018,15.9,4,,1,10,5,14.2,6,5,2,A,6.5,4,2.4,1, almost flowering
+204,NA,NO DATA,,,data is missing from weight data sheets,N,NA,NO DATA,,,NA,NA,No plant,NA,NA,NA,NA,NA,NA,NA,empty pot,NA,NA,NA,NA,
+205,0.0328,,Tayler&Lukas,12/17/2018,,N,0.0425,,Audrey Hogenkamp,7/20/2018,11.5,4,,1,5,4,9.5,4,4,1,D,4,6,,1,AF
+206,0.0729,,Tayler&Lukas,12/17/2018,,N,0.0595,,Audrey Hogenkamp,7/20/2018,11.8,4,,1,0,3,11.5,3,3,2,D,8.9,5,2.2,1,AF
+207,0.0375,,Audrey Hogenkamp,7/25/2018,,N,0.033,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,15.3,3,,1,3,5,10.5,6,3,2,A,2.1,4,,1,OG 2 leaves burried
+208,0.0175,,Tayler&Lukas,12/17/2018,,N,0.0331,,Audrey Hogenkamp,7/20/2018,11.4,2,,1,9,5,10.1,14,4,2,A,6.4,4,1.8,1,AF
+209,0.0184,,Tayler&Lukas,12/17/2018,,N,0.0209,,Audrey Hogenkamp,7/20/2018,15.1,2,,1,5,4,10.6,2,3,2,D,3.8,4,1.9,1,AF
+210,0,NO DATA,,,data is missing from weight data sheets,N,0,NO DATA,,,0,0,No plant,0,0,0,0,0,0,5,DEAD,1.4,3,,5,Dead
+211,0.0092,,Tayler&Lukas,12/19/2018,,N,0.0148,,Audrey Hogenkamp,7/20/2018,3.6,1,,1,0,1,4,2,1,2,A,1.8,4,,1,
+212,NA,NO DATA,,,data is missing from weight data sheets,N,NA,NO DATA,,,NA,NA,No plant ,NA,NA,NA,NA,NA,NA,NA,empty pot,NA,NA,NA,NA,
+213,0.0032,,Tayler&Lukas,12/19/2018,,N,0.0148,,Audrey Hogenkamp,7/20/2018,5.7,2,,1,2,1,6,4,1,2,D,3.5,3,1.4,1,almost flowering
+214,0.0453,,Tayler&Lukas,12/19/2018,,N,0.0137,,Audrey Hogenkamp,7/20/2018,5.2,3,,1,0,1,5,3,1,2,A,2.4,3,1.9,1,1 piece of grass removed
+215,0.0527,,Audrey Hogenkamp,7/20/2018,,N,0.055,,Audrey Hogenkamp,7/20/2018,6.6,3,,1,0,2,6.1,2,2,3,A,2,3,1.6,1,
+216,0.0514,,Audrey Hogenkamp,7/20/2018,,N,0.0057,,Audrey Hogenkamp,7/20/2018,6.5,1,,1,0,1,6.2,3,1,1,A,2.4,4,1.4,1,
+217,0.1157,,Audrey Hogenkamp,7/20/2018,,N,0.0062,,Audrey Hogenkamp,7/20/2018,6.9,1,,1,2,1,7,1,1,1,N,4.4,4,1.6,1,
+218,0.0616,,Audrey Hogenkamp,7/20/2018,,N,0.0059,,Audrey Hogenkamp,7/20/2018,5.7,2,,1,4,1,5.3,2,1,3,D,3.5,4,,1,almost flowering
+219,0.1256,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.0122,,Audrey Hogenkamp,7/20/2018,5,2,,1,4,1,5.5,1,1,2,D,3.1,3,1.5,1,
+220,0.3708,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.0085,,Audrey Hogenkamp,7/20/2018,9.1,2,,1,0,1,8.7,3,1,3,D,5.5,4,2.1,1,
+221,0.195,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.0062,,Audrey Hogenkamp,7/20/2018,6.3,2,,1,3,2,6.1,3,2,2,D,3.8,4,1.9,2,
+222,0,no plant,Audrey Hogenkamp,7/20/2018,,N,0,no plant,Audrey Hogenkamp,7/20/2018,0,5,dead,0,0,0,0,0,0,0,empty pot,,NA,NA,NA,
+223,0.0567,,Audrey Hogenkamp,7/20/2018,,N,0.0084,,Audrey Hogenkamp,7/20/2018,8.6,2,,1,0,1,8,2,1,3,A,4.8,4,1.6,1,tips of buds purple
+224,0,no plant,Audrey Hogenkamp,7/20/2018,,N,0,no plant,Audrey Hogenkamp,7/20/2018,0,5,dead,0,0,0,0,0,0,0,empty pot,NA,NA,NA,NA,
+225,0.0297,,Audrey Hogenkamp,7/20/2018,,N,0.0101,,Audrey Hogenkamp,7/20/2018,4.6,5,,1,0,2,5,0,3,4,D,3.6,6,1.6,2,
+226,0.1416,,Audrey Hogenkamp,7/20/2018,,N,0.0266,,Audrey Hogenkamp,7/20/2018,8.8,2,,1,1,2,8.8,3,2,2,A,6.3,5,2.2,1,
+227,0.0896,,Audrey Hogenkamp,7/20/2018,,N,0.0224,,Audrey Hogenkamp,7/20/2018,15.1,4,,1,0,2,13.6,5,2,2,D,11.3,6,2.4,1,almost flowering
+228,0.0128,,Audrey Hogenkamp,7/25/2018,,N,0.0164,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,6.4,2,Purple Leave Vein,1,2,0,6.5,8,0,2,N,3.8,5,1.9,2,
+229,0.0847,,Tayler&Lukas,12/17/2018,,N,0.0116,,Audrey Hogenkamp,7/20/2018,9.5,2,,1,5,2,9,7,2,3,D,5.9,4,2.1,2,
+230,0.1266,,Harry Ervin,7/23/2018,,N,0.0176,,Audrey Hogenkamp,7/20/2018,11.9,2,,1,2,3,11.7,3,3,2,D,9.5,6,,1,buds emerging
+231,0.0063,,Audrey Hogenkamp,7/25/2018,,N,0.0126,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,12.6,1,,1,0,2,12.2,3,2,2,A,7.8,4,,2,AF
+232,0.0332,,Tayler&Lukas,12/17/2018,,N,0.0155,,Audrey Hogenkamp,7/20/2018,4.4,3,,1,2,1,4.4,6,1,2,D,2.2,4,1.8,1,almost flowering
+233,0.0936,,Harry Ervin,7/23/2018,,N,0.0156,,Audrey Hogenkamp,7/20/2018,6.7,2,,1,0,2,6.4,0,2,1,N,3.3,4,,1,
+234,0.0123,,Audrey Hogenkamp,7/25/2018,,N,0.0168,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,8,2,,1,3,1,7.4,4,1,1,A,4.3,4,2,1,almost flowering
+235,0.1944,,Harry Ervin,7/23/2018,,N,0.0359,,Audrey Hogenkamp,7/20/2018,14.1,4,Purple Leaves,1,0,2,13.7,4,2,2,D,11.4,5,2.4,1,AF
+236,0.1711,,Harry Ervin,7/23/2018,,N,0.0115,,Audrey Hogenkamp,7/20/2018,7.4,2,,1,0,1,5.8,3,1,2,D,4.3,4,1.9,1,AF
+237,0.0062,,Audrey Hogenkamp,7/25/2018,,N,0.0226,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,8.7,2,,1,7,3,8.5,6,3,2,D,7,5,,2,AF
+238,0.3733,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.0124,,Audrey Hogenkamp,7/20/2018,7.3,2,,1,0,1,7.4,4,2,2,D,5.1,4,1.6,1,AF
+239,0.2772,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.023,,Audrey Hogenkamp,7/20/2018,8.3,4,,1,4,2,8,6,2,3,D,6.6,6,1.9,2,AF
+240,0.0176,,Audrey Hogenkamp,7/25/2018,,N,0.0124,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,5,2,,1,5,1,5.3,2,1,2,D,3.1,4,1.5,1,
+241,0.2303,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.0321,,Audrey Hogenkamp,7/20/2018,10.7,3,,1,9,4,10.7,5,4,1,D,5.1,4,1.8,1,
+242,0.0757,,Audrey Hogenkamp,7/20/2018,,N,0.0299,,Audrey Hogenkamp,7/20/2018,9.7,3,,1,4,3,9,3,3,2,D,7.4,4,,1,almost flowering
+243,0.0215,,Audrey Hogenkamp,7/25/2018,,N,0.0201,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,14.5,4,,1,0,4,11.5,6,3,1,A,3.1,4,,1,almost flowering
+244,0.1951,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.0323,,Audrey Hogenkamp,7/20/2018,12.2,2,,1,5,5,11.8,1,5,2,A,6.8,5,2.1,2,AF
+245,0.14,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.0281,,Audrey Hogenkamp,7/20/2018,12.4,1,,1,3,6,11,8,4,2,A,4.9,4,2,2,AF
+246,0.0059,,Audrey Hogenkamp,7/25/2018,,N,0.0287,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,14.9,2,,1,0,4,13.5,1,4,1,A,5,4,1.9,1,AF
+247,0.1979,Lots of sand and vermiculite too hard to separate from seedlings,Audrey Hogenkamp,7/20/2018,,Y,0.0785,,Audrey Hogenkamp,7/20/2018,10.8,1,,1,1,3,11,3,3,1,A,3.1,3,,1,
+248,0.1532,,Audrey Hogenkamp,7/20/2018,,N,0.0404,,Audrey Hogenkamp,7/20/2018,11.1,3,,1,10,5,9.9,5,5,2,semi-D,4,4,,1,almost flowering
+249,0.009,,Audrey Hogenkamp,7/25/2018,,N,0.0339,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,13.5,3,,1,9,6,13.8,8,6,2,D,8,4,,1,almost flowering
+250,0.536,Lots of sand and vermiculite too hard to separate from seedlings,Audrey Hogenkamp,7/20/2018,,Y,0.0432,,Audrey Hogenkamp,7/20/2018,14,2,,1,6,8,14,2,7,1,A,6.4,4,,1,
+251,0.1405,,Harry Ervin,7/23/2018,,N,0.0238,,Audrey Hogenkamp,7/20/2018,15.1,5,,1,0,6,14.5,3,6,2,A,9.5,5,,2,AF
+252,0.021,,Audrey Hogenkamp,7/25/2018,,N,0.0571,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,11,2,,1,2,3,11,5,3,1,A,3.9,5,,1,
+253,0.1271,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.0325,,Audrey Hogenkamp,7/20/2018,7.4,2,,1,9,4,7.9,7,4,2,D,3.9,4,,1,
+254,0.1084,,Harry Ervin,7/23/2018,,N,0.0212,,Audrey Hogenkamp,7/20/2018,12.2,2,,1,3,6,10.6,8,4,2,D,6.1,4,,1,AF
+255,0.0159,,Audrey Hogenkamp,7/25/2018,,N,0.0134,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,8.7,2,,1,0,4,6.7,5,4,3,D; *bendy,3.7,4,,1,"OG leaves burried, buds emerging"
+256,0.1835,Extra roots (mostly sand and vericulite(poured out)) added to original measurement,Harry Ervin,7/23/2018,,Y,0.0826,,Audrey Hogenkamp,7/20/2018,15.5,3,,1,6,6,14.6,4,6,2,D,11.2,6,,1,almost flowering
+257,0.375,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.023,,Audrey Hogenkamp,7/20/2018,10.6,3,,1,1,5,10.8,0,6,2,D,8.1,6,,1,almost flowering
+258,NA,NO DATA,,,data is missing from weight data sheets,N,NA,NO DATA,,,NA,NA,No plant,NA,NA,NA,NA,NA,NA,NA,empty pot,NA,NA,NA,NA,
+259,0.129,"2 small pieces of roots (probably not all of the roots?),Extra roots (mostly sand and vericulite(poured out))",Audrey Hogenkamp,7/20/2018,,Y,0.0146,,Audrey Hogenkamp,7/20/2018,5.4,1,,1,3,0,5.4,12,0,1,N,3.3,4,1.9,2,browning buds (ends)
+260,0.1717,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.0213,,Audrey Hogenkamp,7/20/2018,4.8,2,,1,3,0,4.8,4,0,3,N,3.3,5,,2,
+261,NA,NO DATA,,,data is missing from weight data sheets,N,NA,NO DATA,,,NA,NA,No Plant,NA,NA,NA,NA,NA,NA,NA,empty pot,NA,NA,NA,NA,
+262,0.2927,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.0199,,Audrey Hogenkamp,7/20/2018,6.1,2,Purple leaves,1,4,3,6.4,5,4,2,D,3.8,5,2.3,1,almost flowering
+263,0.207,,Harry Ervin,7/23/2018,,N,0.0238,,Audrey Hogenkamp,7/20/2018,9.5,2,,1,5,3,9.4,7,3,3,D,6.4,7,,1,almost flowering
+264,0.0035,,Audrey Hogenkamp,7/25/2018,,N,0.0095,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,5.7,1,,1,0,1,5.8,3,1,1,A,2.9,4,,1,almost flowering
+265,0.3882,Lots of sand and vermiculite,Audrey Hogenkamp,7/20/2018,,Y,0.0315,,Audrey Hogenkamp,7/20/2018,9.3,2,,1,0,4,8.5,4,4,2,D,6.8,6,2,1,AF
+266,0.1423,,Harry Ervin,7/23/2018,,N,0.023,,Audrey Hogenkamp,7/20/2018,5.6,2,,1,5,1,6.1,7,2,1,A,3.4,4,1.3,1,
+267,NA,NO DATA,,,data is missing from weight data sheets,N,NA,NO DATA,,,NA,NA,,NA,NA,NA,NA,NA,NA,NA,empty pot,NA,NA,NA,NA,
+268,0.1076,,Harry Ervin,7/23/2018,,N,0.0244,,Audrey Hogenkamp,7/20/2018,10.1,1,,1,3,2,9.2,4,2,2,D,8.3,7,2,1,buds emerging
+269,0.1763,,Harry Ervin,7/23/2018,,N,0.0208,,Audrey Hogenkamp,7/20/2018,13,1,,1,1,2,13.2,2,3,3,A,7.3,4,2.2,1,AF
+270,0.0178,,Audrey Hogenkamp,7/25/2018,,N,0.0133,,Audrey Hogenkamp and Kisanet Gebresilase,7/20/2018,11.3,2,,1,0,4,11,3,4,2,D,9.3,6,2.2,1,buds emerging
+,,,,,,,,,,,,,,,,,,,,,,,,,,
