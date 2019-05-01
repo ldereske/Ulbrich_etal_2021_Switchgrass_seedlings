@@ -80,7 +80,7 @@ ggplot(pot_germ_soil_root_time_drought, aes(x=exp_days,y=pot_w_germ))+geom_point
 #let's look at the final number of germinates
 #harvested seedlings plus final survival
 
-dataSG_seed_surv_trt_g=group_by(dataSG_seedling_surv_trt, Plant_Number)
+dataSG_seed_surv_trt_g=group_by(dataSG_seed_surv_trt, Plant_Number)
 total_seedlings_harvested=summarise_at(dataSG_seed_surv_trt_g, "num_removed", sum)
 colnames(total_seedlings_harvested)[2]="tot_num_removed"
 
@@ -109,6 +109,40 @@ Anova(seed_germ_model, type=2)
 emmeans(seed_germ_model, ~precip)
 emmeans(seed_germ_model, pairwise~soil_root)
 emmeans(seed_germ_model, pairwise~soil_root|precip)
+"$contrasts
+precip = A:
+ contrast  estimate    SE  df z.ratio p.value
+ L.B - S.B    1.233 0.809 Inf  1.525  0.2792 
+ L.B - L.R   -0.775 0.896 Inf -0.865  0.6624 
+ S.B - L.R   -2.008 0.889 Inf -2.258  0.0619 
+
+precip = D:
+ contrast  estimate    SE  df z.ratio p.value
+ L.B - S.B    1.567 0.830 Inf  1.888  0.1421 
+ L.B - L.R    0.908 0.790 Inf  1.149  0.4841 
+ S.B - L.R   -0.659 0.820 Inf -0.804  0.7008 "
+
+emmeans(seed_germ_model, pairwise~soil_root*precip, adjust="fdr")
+"$contrasts
+ contrast      estimate    SE  df z.ratio p.value
+L.B,A - S.B,A    1.233 0.809 Inf  1.525  0.2728 
+L.B,A - L.R,A   -0.775 0.896 Inf -0.865  0.4865 
+L.B,A - L.B,D    0.325 0.808 Inf  0.402  0.7367 
+L.B,A - S.B,D    1.892 0.848 Inf  2.230  0.0965 
+L.B,A - L.R,D    1.233 0.809 Inf  1.525  0.2728 
+S.B,A - L.R,A   -2.008 0.889 Inf -2.258  0.0965 
+S.B,A - L.B,D   -0.908 0.790 Inf -1.149  0.3760 
+S.B,A - S.B,D    0.659 0.820 Inf  0.804  0.4865 
+S.B,A - L.R,D    0.000 0.783 Inf  0.000  1.0000 
+L.R,A - L.B,D    1.100 0.884 Inf  1.244  0.3760 
+L.R,A - S.B,D    2.667 0.928 Inf  2.875  0.0605 
+L.R,A - L.R,D    2.008 0.889 Inf  2.258  0.0965 
+L.B,D - S.B,D    1.567 0.830 Inf  1.888  0.1771 
+L.B,D - L.R,D    0.908 0.790 Inf  1.149  0.3760 
+S.B,D - L.R,D   -0.659 0.820 Inf -0.804  0.4865 
+Results are averaged over the levels of: block 
+Results are given on the log odds ratio (not the response) scale. 
+P value adjustment: fdr method for 15 tests "
 
 #Bars by soil_root
 
@@ -211,6 +245,30 @@ emmeans(seed_biomas_model, pairwise~soil_root|precip)
 #L.B - L.R -0.5686425 0.4606463 34  -1.234  0.4415
 #S.B - L.R  2.0769524 0.7786334 34   2.667  0.0304
 
+emmeans(seed_biomas_model, pairwise~soil_root*precip, adjust="fdr")
+
+"$contrasts
+ contrast      estimate    SE df t.ratio p.value
+L.B,A - S.B,A    0.529 0.482 34  1.097  0.3823 
+L.B,A - L.R,A   -0.364 0.372 34 -0.980  0.4177 
+L.B,A - L.B,D    0.775 0.403 34  1.924  0.1176 
+L.B,A - S.B,D   -1.870 0.708 34 -2.642  0.0371 
+L.B,A - L.R,D    0.207 0.459 34  0.450  0.6552 
+S.B,A - L.R,A   -0.893 0.462 34 -1.932  0.1176 
+S.B,A - L.B,D    0.247 0.484 34  0.509  0.6552 
+S.B,A - S.B,D   -2.399 0.771 34 -3.113  0.0258 
+S.B,A - L.R,D   -0.322 0.532 34 -0.606  0.6330 
+L.R,A - L.B,D    1.140 0.381 34  2.989  0.0258 
+L.R,A - S.B,D   -1.506 0.704 34 -2.140  0.0990 
+L.R,A - L.R,D    0.571 0.440 34  1.299  0.3379 
+L.B,D - S.B,D   -2.646 0.722 34 -3.663  0.0126 
+L.B,D - L.R,D   -0.569 0.461 34 -1.234  0.3383 
+S.B,D - L.R,D    2.077 0.779 34  2.667  0.0371 
+
+Results are averaged over the levels of: block 
+Results are given on the log (not the response) scale. 
+P value adjustment: fdr method for 15 tests 
+"
 
 
 fin_dataSG_biomass_seed_surv_trt_w_germ_soil_root_precip_g=fin_dataSG_biomass_seed_surv_trt_w_germ %>% group_by(soil_root,precip)
@@ -483,8 +541,28 @@ emmeans(seedling_biomas_model, pairwise~soil_root|precip)
 #L.B - L.R  0.42719232 0.5633964 80   0.758  0.7295
 #S.B - L.R  0.38226047 0.5633964 80   0.678  0.7767
 
+emmeans(seedling_biomas_model, pairwise~soil_root*precip, adjust="fdr")
+"$contrasts
+ contrast      estimate    SE df t.ratio p.value
+L.B,A - S.B,A  -1.8632 0.563 80 -3.307  0.0042 
+L.B,A - L.R,A   0.1403 0.563 80  0.249  0.8614 
+L.B,A - L.B,D   0.4599 0.563 80  0.816  0.6493 
+L.B,A - S.B,D   0.5048 0.563 80  0.896  0.6493 
+L.B,A - L.R,D   0.8871 0.563 80  1.575  0.2983 
+S.B,A - L.R,A   2.0036 0.563 80  3.556  0.0024 
+S.B,A - L.B,D   2.3232 0.563 80  4.123  0.0005 
+S.B,A - S.B,D   2.3681 0.563 80  4.203  0.0005 
+S.B,A - L.R,D   2.7504 0.563 80  4.882  0.0001 
+L.R,A - L.B,D   0.3196 0.563 80  0.567  0.6601 
+L.R,A - S.B,D   0.3645 0.563 80  0.647  0.6493 
+L.R,A - L.R,D   0.7468 0.563 80  1.326  0.4045 
+L.B,D - S.B,D   0.0449 0.563 80  0.080  0.9366 
+L.B,D - L.R,D   0.4272 0.563 80  0.758  0.6493 
+S.B,D - L.R,D   0.3823 0.563 80  0.678  0.6493 
 
-
+Results are averaged over the levels of: block 
+Results are given on the log (not the response) scale. 
+P value adjustment: fdr method for 15 tests "
 data_SG_biomass_seedling_surv_trt_soil_root_precip_g=data_SG_biomass_seedling_surv_trt %>% group_by(soil_root,precip)
 seedling_total_bio_soil_root_precip=summarise_at(data_SG_biomass_seedling_surv_trt_soil_root_precip_g, 
                                         "total_biomass_0", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
@@ -961,8 +1039,27 @@ emmeans(delta_height_trans_model, pairwise~soil_root|precip)
 #L.B - L.R    1.253 1.31 170  0.954  0.6069 
 #S.B - L.R    2.080 1.31 170  1.583  0.2556 
 
+emmeans(delta_height_trans_model, pairwise~soil_root*precip, adjust="fdr")
+"$contrasts
+ contrast      estimate   SE df t.ratio p.value
+ L.B,A - S.B,A  -11.467 1.26 80 -9.083  <.0001 
+ L.B,A - L.R,A    1.213 1.26 80  0.961  0.4242 
+ L.B,A - L.B,D    2.700 1.26 80  2.139  0.0666 
+ L.B,A - S.B,D    0.800 1.26 80  0.634  0.5658 
+ L.B,A - L.R,D    3.800 1.26 80  3.010  0.0087 
+ S.B,A - L.R,A   12.680 1.26 80 10.044  <.0001 
+ S.B,A - L.B,D   14.167 1.26 80 11.222  <.0001 
+ S.B,A - S.B,D   12.267 1.26 80  9.717  <.0001 
+ S.B,A - L.R,D   15.267 1.26 80 12.093  <.0001 
+ L.R,A - L.B,D    1.487 1.26 80  1.178  0.3306 
+ L.R,A - S.B,D   -0.413 1.26 80 -0.327  0.7442 
+ L.R,A - L.R,D    2.587 1.26 80  2.049  0.0729 
+ L.B,D - S.B,D   -1.900 1.26 80 -1.505  0.2044 
+ L.B,D - L.R,D    1.100 1.26 80  0.871  0.4456 
+ S.B,D - L.R,D    3.000 1.26 80  2.376  0.0426 
 
-
+Results are averaged over the levels of: block 
+P value adjustment: fdr method for 15 tests "
 transplant_SG_height_plant_harvest_trt_soil_root_precip_g=transplant_SG_height_plant_harvest_trt %>% group_by(soil_root,precip)
 delta_height_trans_soil_root_precip=summarise_at(transplant_SG_height_plant_harvest_trt_soil_root_precip_g, 
                                                 "delta_height", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
