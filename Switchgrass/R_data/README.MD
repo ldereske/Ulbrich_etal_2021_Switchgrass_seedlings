@@ -74,4 +74,35 @@ precip= A=ambient precipitation (3.4 mL per day 1997-2017 May to July average mo
 D=drought precipitation (3.4 mL every three days 32.85 mm per month based of over the 2012 drought)
 life_stage= pot recieved either S=seeds (10 per pot) or G=seedlings transplanted from sterile sand/vermiculite
 trt= the raw label with short code of the treatments with pot number removed
+
+#RootTraits.csv
 `
+Plant_Number	unique sampleID per plant/pot
+raw_label= the raw label with short code of the treatments
+soil_status= status of soils was if they were L=alive (not autoclaved) S=sterile (autoclaved)
+root_association= where the soil was originally sampled B=bulk (dug with a shovel in patchs without Switchgrass) 
+R=rhizosphere soils (soils shook from live plant daug up in the plot)
+block= pots were blocked by the plant that they recieved soil from and location in the greenhouse)
+precip= A=ambient precipitation (3.4 mL per day 1997-2017 May to July average monthly precipitation = 93.15 mm) or 
+D=drought precipitation (3.4 mL every three days 32.85 mm per month based of over the 2012 drought)
+life_stage= pot recieved either S=seeds (10 per pot) or G=seedlings transplanted from sterile sand/vermiculite
+trt= the raw label with short code of the treatments with pot number removed
+Rhizosheath_WaterControl_g=	Weight (g) of water added to 50mL tubes prior to adding rootw/soil
+Rhizosheath_WaterSoil_g	=Weight (g) of water + soil after rhizosheath soil is removed 
+WetRoots_g=	Weight (g) of wet roots 
+DryRoots_g=	Weight (g) of dried roots 
+AverageRootWidth_Diameter=	GiaRoots calculated - the mean value of the root width estimaton computed for all pixels ofthe medial axis of the entire root system
+NetworkWidth= GiaRoots calculated - network width
+NetworkArea= GiaRoots calculated - the number of network pixels in the image
+SpecificRootLength=	GiaRoots calculated - total root length divided by root system volume.  Volume is estimatedas the sum of cross sectional areas for all pixels of the medial axis of the root system.  Thetotal root length is the number of pixels in the medial axis of the root system.
+NetworkLength= GiaRoots calculated - the total number of pixels in the network skeleton
+NetworkVolume=	GiaRoots calculated - the  sum  of  the  local  volume  at  each  pixel  of  the  network  skeleton,  as approximated by a tubular shape whose radius is estimated from the image
+RhizosheathSoil_g=	Rhizosheath_Water_g - Rhizosheath_WaterSoil_g; ; Neg Values = 0 (too little rhizosheath weight to detect)
+RhizosheathSoil_WetRoots_g=	RhizosheathSoil_g/ WetRoots_g; Neg Values = 0 (too little rhizosheath weight to detect)
+RhizosheathSoil_DryRoots_g=	RhizosheathSoil_g/ DryRoots_g; Neg Values = 0 (too little rhizosheath weight to detect)
+SRL_actual=	NetworkLength/DryRoots_g
+RLD= NetworkLength/158mL (pot volume) 
+`
+
+
+
