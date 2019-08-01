@@ -462,18 +462,109 @@ P value adjustment method: fdr "
 #####NMDS Compound Graph####
 #Let's Graph this
 
+#first what does the combined transplant and seed-start NMDS look like
+
+#live
+SILVA_MERDS_rar_live=subset_samples(SILVA_MERDS_rar, soil_status!="S"|life_stage=="Start")
+SILVA_MERDS_rar_live_map=sample_data(SILVA_MERDS_rar_live)
+SILVA_MERDS_rar_live_ord=ordinate(SILVA_MERDS_rar_live, method = "NMDS",distance = "bray")
+#*** Solution reached
+#0.1523099 
+SILVA_MERDS_rar_live_ord_points=merge(SILVA_MERDS_rar_live_ord$points,SILVA_MERDS_rar_live_map,by="row.names")
+
+(live_trans_ord_p=ggplot(data=SILVA_MERDS_rar_live_ord_points, aes(x=MDS1,y=MDS2))+
+    geom_point(size=5, aes(shape=root_association, fill=precip))+stat_ellipse(level=.5, type = "norm",aes(color=interaction(root_association,precip)))+
+    theme_bw()+scale_fill_manual(values = c("white","dark grey","black"))+scale_shape_manual(values = c(21,24))+
+    ggtitle(label = "Live Soils")+theme(legend.position = "none",plot.title = element_text(hjust = 0.5))+geom_label_repel(size=3,aes(label = life_stage)))
+
+(live_trans_ord_p=ggplot(data=SILVA_MERDS_rar_live_ord_points, aes(x=MDS1,y=MDS2))+
+    geom_point(size=5, aes(shape=root_association, fill=precip))+
+    theme_bw()+scale_fill_manual(values = c("white","dark grey","black"))+scale_shape_manual(values = c(21,24))+
+    ggtitle(label = "Live Soils")+theme(legend.position = "none",plot.title = element_text(hjust = 0.5))+geom_label_repel(size=3,aes(label = life_stage)))
+
+
 #Live transplant
 SILVA_MERDS_rar_live_trans=subset_samples(SILVA_MERDS_rar, soil_status!="S"&life_stage=="G"|life_stage=="Start")
+SILVA_MERDS_rar_live_trans_map=sample_data(SILVA_MERDS_rar_live_trans)
 summary(sample_data(SILVA_MERDS_rar_live_trans))
 SILVA_MERDS_rar_live_trans_ord=ordinate(SILVA_MERDS_rar_live_trans, method = "NMDS",distance = "bray")
 #*** Solution reached
 #0.1242186 
-(live_trans_ord_p=plot_ordination(SILVA_MERDS_rar_live_trans,SILVA_MERDS_rar_live_trans_ord,shape="root_association")+geom_point(size=5, aes(shape=root_association, fill=precip))+
-    theme_bw()+scale_fill_manual(values = c("white","dark grey","black"))+scale_shape_manual(values = c(21,24))+
+SILVA_MERDS_rar_live_trans_ord_points=merge(SILVA_MERDS_rar_live_trans_ord$points,SILVA_MERDS_rar_live_trans_map,by="row.names")
+nrow(SILVA_MERDS_rar_live_trans_ord_points)
+summary(SILVA_MERDS_rar_live_trans_ord_points)
+(live_trans_ord_p=ggplot(data=SILVA_MERDS_rar_live_trans_ord_points, aes(x=MDS1,y=MDS2))+
+    geom_point(size=5, aes(shape=root_association, fill=precip))+
+    theme_bw()+
+    scale_shape_manual(values = c(21,24))+scale_fill_manual(values = c("white","dark grey","black"))+
     ggtitle(label = "Transplant")+theme(plot.title = element_text(hjust = 0.5)))
-(live_trans_ord_p_pot_num=plot_ordination(SILVA_MERDS_rar_live_trans,SILVA_MERDS_rar_live_trans_ord,shape="root_association")+geom_point(size=5, aes(shape=root_association, fill=precip))+
+(live_trans_ord_p_pot_num=ggplot(data=SILVA_MERDS_rar_live_trans_ord_points, aes(x=MDS1,y=MDS2))+
+    geom_point(size=5, aes(shape=root_association, fill=precip))+
   geom_label_repel(size=3,aes(label = Plant_Number))+theme_bw()+scale_fill_manual(values = c("white","dark grey","black"))+scale_shape_manual(values = c(21,24))+
   ggtitle(label = "Microbial Soils")+theme(plot.title = element_text(hjust = 0.5)))
+
+
+(live_trans_ord_p=ggplot(data=SILVA_MERDS_rar_live_trans_ord_points, aes(x=MDS1,y=MDS2))+
+    stat_ellipse(level=.5,geom="polygon",alpha=.2,aes(fill=interaction(precip,root_association)))+
+    geom_point(size=5, aes(shape=root_association, fill=interaction(precip,root_association)))+
+    theme_bw()+scale_fill_brewer(palette = "Paired")+
+    scale_shape_manual(values = c(21,24))+
+    ggtitle(label = "Transplant")+theme(plot.title = element_text(hjust = 0.5)))
+
+#Hull to group the points
+
+grp.start <- SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip == "Start", 
+                         ][chull(SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip == 
+                                                                   "Start", c("MDS1", "MDS2")]), ]  # hull values 
+nrow(grp.start)
+#6
+grp.start_rhizo <- SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip == "Start"&
+                                                          SILVA_MERDS_rar_live_trans_ord_points$root_association == "R", 
+                                                        ][chull(SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$life_stage == 
+                                                                                                        "Start"&
+                                                                                                        SILVA_MERDS_rar_live_trans_ord_points$root_association == "R", c("MDS1", "MDS2")]), ]  # hull values 
+nrow(grp.start_rhizo)
+#3
+
+grp.Amb_Bulk=SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip == "A"&
+                                                     SILVA_MERDS_rar_live_trans_ord_points$root_association == "B", 
+                                                   ][chull(SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip == "A"&
+                                                                                                   SILVA_MERDS_rar_live_trans_ord_points$root_association == "B",c("MDS1", "MDS2")]), ]  # hull values for grp A
+nrow(grp.Amb_Bulk)
+
+grp.Amb_Rhizo=SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip == "A"&
+                                                     SILVA_MERDS_rar_live_trans_ord_points$root_association == "R", 
+                                                   ][chull(SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip == "A"&
+                                                                                                   SILVA_MERDS_rar_live_trans_ord_points$root_association == "R",c("MDS1", "MDS2")]), ]  # hull values for grp A
+nrow(grp.Amb_Rhizo)
+
+
+grp.Dro_Bulk=SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip == "D"&
+                                                     SILVA_MERDS_rar_live_trans_ord_points$root_association == "B", 
+                                                   ][chull(SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip == "D"&
+                                                                                                   SILVA_MERDS_rar_live_trans_ord_points$root_association == "B",c("MDS1", "MDS2")]), ]  # hull values for grp A
+nrow(grp.Dro_Bulk)
+
+grp.Dro_Rhizo=SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip == "D"&
+                                                      SILVA_MERDS_rar_live_trans_ord_points$root_association == "R", 
+                                                    ][chull(SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip == "D"&
+                                                                                                    SILVA_MERDS_rar_live_trans_ord_points$root_association == "R",c("MDS1", "MDS2")]), ]  # hull values for grp A
+nrow(grp.Dro_Rhizo)
+
+hull_trans_live=rbind(grp.start,grp.Amb_Bulk,grp.Amb_Rhizo,grp.Dro_Bulk,grp.Dro_Rhizo)
+nrow(hull_trans_live)
+#22
+
+
+(live_trans_ord_hull_p=ggplot(data=SILVA_MERDS_rar_live_trans_ord_points, aes(x=MDS1,y=MDS2))+
+    geom_polygon(data=hull_trans_live,aes(alpha=precip,x=MDS1,y=MDS2,fill=interaction(precip,root_association),
+                                    group=interaction(precip,root_association)))+
+    scale_alpha_manual(values = c(0.9,0.5,0.5))+
+    geom_point(size=5, aes(shape=root_association, fill=interaction(precip,root_association)))+
+    theme_bw()+scale_fill_manual(values = c("gray95","dark grey","black","gray95", "dark grey","black"))+
+    scale_shape_manual(values = c(21,24))+
+    ggtitle(label = "Transplant")+theme(plot.title = element_text(hjust = 0.5)))
+
 
 #sterile transplants
 SILVA_MERDS_rar_stl_trans=subset_samples(SILVA_MERDS_rar, soil_status=="S"&life_stage=="G")
@@ -493,16 +584,77 @@ SILVA_MERDS_rar_stl_ord=ordinate(SILVA_MERDS_rar_stl_trans, method = "NMDS",dist
 
 #Live seed
 SILVA_MERDS_rar_live_seed=subset_samples(SILVA_MERDS_rar, soil_status!="S"&life_stage=="S"|life_stage=="Start")
+SILVA_MERDS_rar_live_seed_map=sample_data(SILVA_MERDS_rar_live_seed)
 summary(sample_data(SILVA_MERDS_rar_live_seed))
 SILVA_MERDS_rar_live_seed_ord=ordinate(SILVA_MERDS_rar_live_seed, method = "NMDS",distance = "bray")
 #*** Solution reached
 #0.1153055
-(live_seed_ord_p=plot_ordination(SILVA_MERDS_rar_live_seed,SILVA_MERDS_rar_live_seed_ord,shape="root_association")+geom_point(size=5, aes(shape=root_association, fill=precip))+
+SILVA_MERDS_rar_live_seed_ord_points=merge(SILVA_MERDS_rar_live_seed_ord$points,SILVA_MERDS_rar_live_seed_map,by="row.names")
+nrow(SILVA_MERDS_rar_live_seed_ord_points)
+summary(SILVA_MERDS_rar_live_seed_ord_points)
+(live_seed_ord_p=ggplot(data=SILVA_MERDS_rar_live_seed_ord_points, aes(x=MDS1,y=MDS2))+geom_point(size=5, aes(shape=root_association, fill=precip))+
     theme_bw()+scale_fill_manual(values = c("white","dark grey","black"))+scale_shape_manual(values = c(21,24))+
     ggtitle(label = "Seedling")+theme(plot.title = element_text(hjust = 0.5), axis.title.y = element_blank()))
-(live_seed_ord_p_pot_num=plot_ordination(SILVA_MERDS_rar_live_seed,SILVA_MERDS_rar_live_seed_ord,shape="root_association")+geom_point(size=5, aes(shape=root_association, fill=precip))+
+(live_seed_ord_p_pot_num=ggplot(data=SILVA_MERDS_rar_live_seed_ord_points, aes(x=MDS1,y=MDS2))+geom_point(size=5, aes(shape=root_association, fill=precip))+
     geom_label_repel(size=3,aes(label = Plant_Number))+theme_bw()+scale_fill_manual(values = c("white","dark grey","black"))+scale_shape_manual(values = c(21,24))+
     ggtitle(label = "Microbial Soils")+theme(plot.title = element_text(hjust = 0.5)))
+
+
+
+#Hull to group the points
+
+grp.seed_start <- SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip == "Start", 
+                                                   ][chull(SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$life_stage == 
+                                                                                                   "Start", c("MDS1", "MDS2")]), ]  # hull values 
+nrow(grp.seed_start)
+#5
+grp.seed_start_rhizo <- SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip == "Start"&
+                                                                SILVA_MERDS_rar_live_seed_ord_points$root_association == "R", 
+                                                         ][chull(SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$life_stage == 
+                                                                                                         "Start"&
+                                                                                                        SILVA_MERDS_rar_live_seed_ord_points$root_association == "R", c("MDS1", "MDS2")]), ]  # hull values 
+nrow(grp.seed_start_rhizo)
+#3
+
+grp.seed_Amb_Bulk=SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip == "A"&
+                                                         SILVA_MERDS_rar_live_seed_ord_points$root_association == "B", 
+                                                   ][chull(SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip == "A"&
+                                                                                                  SILVA_MERDS_rar_live_seed_ord_points$root_association == "B",c("MDS1", "MDS2")]), ]  # hull values for grp A
+nrow(grp.seed_Amb_Bulk)
+
+grp.seed_Amb_Rhizo=SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip == "A"&
+                                                      SILVA_MERDS_rar_live_seed_ord_points$root_association == "R", 
+                                                    ][chull(SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip == "A"&
+                                                                                                    SILVA_MERDS_rar_live_seed_ord_points$root_association == "R",c("MDS1", "MDS2")]), ]  # hull values for grp A
+nrow(grp.seed_Amb_Rhizo)
+
+
+grp.seed_Dro_Bulk=SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip == "D"&
+                                                         SILVA_MERDS_rar_live_seed_ord_points$root_association == "B", 
+                                                   ][chull(SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip == "D"&
+                                                                                                  SILVA_MERDS_rar_live_seed_ord_points$root_association == "B",c("MDS1", "MDS2")]), ]  # hull values for grp A
+nrow(grp.seed_Dro_Bulk)
+
+grp.seed_Dro_Rhizo=SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip == "D"&
+                                                          SILVA_MERDS_rar_live_seed_ord_points$root_association == "R", 
+                                                    ][chull(SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip == "D"&
+                                                                                                   SILVA_MERDS_rar_live_seed_ord_points$root_association == "R",c("MDS1", "MDS2")]), ]  # hull values for grp A
+nrow(grp.seed_Dro_Rhizo)
+
+hull_seed_live=rbind(grp.seed_start,grp.seed_Amb_Bulk,grp.seed_Amb_Rhizo,grp.seed_Dro_Bulk,grp.seed_Dro_Rhizo)
+nrow(hull_seed_live)
+#20
+
+
+(live_seed_ord_hull_p=ggplot(data=SILVA_MERDS_rar_live_seed_ord_points, aes(x=MDS1,y=MDS2))+
+    geom_polygon(data=hull_seed_live,aes(alpha=precip,x=MDS1,y=MDS2,fill=interaction(precip,root_association),
+                                          group=interaction(precip,root_association)))+
+    scale_alpha_manual(values = c(0.9,0.5,0.5))+
+    geom_point(size=5, aes(shape=root_association, fill=interaction(precip,root_association)))+
+    theme_bw()+scale_fill_manual(values = c("gray95","dark grey","black","gray95", "dark grey","black"))+
+    scale_shape_manual(values = c(21,24))+
+    ggtitle(label = "Seed-Start")+theme(plot.title = element_text(hjust = 0.5)))
+
 
 #sterile seed
 SILVA_MERDS_rar_stl_seed=subset_samples(SILVA_MERDS_rar, soil_status=="S"&life_stage=="S")
@@ -521,7 +673,8 @@ SILVA_MERDS_rar_stl_seed_ord=ordinate(SILVA_MERDS_rar_stl_seed, method = "NMDS",
 
 ggarrange(live_trans_ord_p,live_seed_ord_p,ncol = 2,  legend = "none")
 #10x5.5
-
+ggarrange(live_trans_ord_hull_p,live_seed_ord_hull_p,ncol = 2,  legend = "none")
+#10x5.5
 #Remove the sterile since it seems to be driving a lot of this
 
 SILVA_MERDS_rar_live=subset_samples(SILVA_MERDS_rar, soil_status!="S")
@@ -670,12 +823,12 @@ Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 #since our other analyses are split by life stage I am going to split them here 
 
 #Transplanted 
-
+SILVA_MERDS_rar_trt=subset_samples(SILVA_MERDS_rar, life_stage!="Start")
+SILVA_MERDS_rar_trt_live=subset_samples(SILVA_MERDS_rar_trt, soil_status!="S")
 SILVA_MERDS_rar_trt_live_trans=subset_samples(SILVA_MERDS_rar_trt_live, life_stage=="G")
 
 SILVA_MERDS_rar_trt_live_trans_ord=ordinate(SILVA_MERDS_rar_trt_live_trans, method = "NMDS",distance = "bray")
-#*** No convergence -- monoMDS stopping criteria:
-#20: stress ratio > sratmax
+#*** Solution reached
 #0.1607911
 plot_ordination(SILVA_MERDS_rar_trt_live_trans,SILVA_MERDS_rar_trt_live_trans_ord, color="precip",shape="root_association")+geom_point(size=4)+
   geom_label_repel(size=3,aes(label = block))+theme_bw()
@@ -685,14 +838,32 @@ SILVA_MERDS_rar_trt_live_trans_map=sample_data(SILVA_MERDS_rar_trt_live_trans)
 SILVA_MERDS_rar_trt_live_trans_map$soil_root=with(SILVA_MERDS_rar_trt_live_trans_map, interaction(soil_status,root_association))
 SILVA_MERDS_rar_trt_live_transe_dis=distance(SILVA_MERDS_rar_trt_live_trans,method = "bray")
 
-adonis(SILVA_MERDS_rar_trt_live_transe_dis~SILVA_MERDS_rar_trt_live_trans_map$soil_root*SILVA_MERDS_rar_trt_live_trans_map$precip
+trans_perm=adonis(SILVA_MERDS_rar_trt_live_transe_dis~SILVA_MERDS_rar_trt_live_trans_map$soil_root*SILVA_MERDS_rar_trt_live_trans_map$precip
        +as.factor(SILVA_MERDS_rar_trt_live_trans_map$block), permutations = 9999)
 #SILVA_MERDS_rar_trt_live_trans_map$precip                                               1   0.26218 0.26218 2.13979 0.12422 0.0045 **
 #as.factor(SILVA_MERDS_rar_trt_live_trans_map$block)                                     3   0.47584 0.15861 1.29453 0.22545 0.0808 . 
+AICc.PERMANOVA(trans_perm)
+
+trans_perm_no_block=adonis(SILVA_MERDS_rar_trt_live_transe_dis~SILVA_MERDS_rar_trt_live_trans_map$soil_root*SILVA_MERDS_rar_trt_live_trans_map$precip, 
+                           permutations = 9999)
+#SILVA_MERDS_rar_trt_live_trans_map$precip                                               1   0.26218 0.26218 1.99304 0.12422 0.0095 **
+AICc.PERMANOVA(trans_perm_no_block)
+
+#beta dispersion
+trans_perm.mod=betadisper(SILVA_MERDS_rar_trt_live_transe_dis, with(SILVA_MERDS_rar_trt_live_trans_map, interaction(soil_root,precip)))
+plot(trans_perm.mod)
+boxplot(trans_perm.mod)
+anova(trans_perm.mod)
+(mod.HSDtrans<- TukeyHSD(trans_perm.mod))
+plot(mod.HSDtrans)
+trans_perm.mod_perm <- permutest(trans_perm.mod, permutations = 9999, pairwise = TRUE)
+trans_perm.mod_stat <- permustats(trans_perm.mod_perm)
+summary(trans_perm.mod_stat)
 
 
 #seed
-
+SILVA_MERDS_rar_trt=subset_samples(SILVA_MERDS_rar, life_stage!="Start")
+SILVA_MERDS_rar_trt_live=subset_samples(SILVA_MERDS_rar_trt, soil_status!="S")
 SILVA_MERDS_rar_trt_live_seed=subset_samples(SILVA_MERDS_rar_trt_live, life_stage=="S")
 
 SILVA_MERDS_rar_trt_live_seed_ord=ordinate(SILVA_MERDS_rar_trt_live_seed, method = "NMDS",distance = "bray")
@@ -706,10 +877,30 @@ SILVA_MERDS_rar_trt_live_seed_map=sample_data(SILVA_MERDS_rar_trt_live_seed)
 SILVA_MERDS_rar_trt_live_seed_map$soil_root=with(SILVA_MERDS_rar_trt_live_seed_map, interaction(soil_status,root_association))
 SILVA_MERDS_rar_trt_live_seed_dis=distance(SILVA_MERDS_rar_trt_live_seed,method = "bray")
 
-adonis(SILVA_MERDS_rar_trt_live_seed_dis~SILVA_MERDS_rar_trt_live_seed_map$soil_root*SILVA_MERDS_rar_trt_live_seed_map$precip
+seed_perm=adonis(SILVA_MERDS_rar_trt_live_seed_dis~SILVA_MERDS_rar_trt_live_seed_map$soil_root*SILVA_MERDS_rar_trt_live_seed_map$precip
        +as.factor(SILVA_MERDS_rar_trt_live_seed_map$block), permutations = 9999)
 #SILVA_MERDS_rar_trt_live_seed_map$soil_root                                           1   0.38611 0.38611  3.3937 0.16782 0.0001 ***
 #SILVA_MERDS_rar_trt_live_seed_map$precip                                              1   0.33423 0.33423  2.9378 0.14527 0.0005 ***
+AICc.PERMANOVA(seed_perm)
+
+seed_perm_no_block=adonis(SILVA_MERDS_rar_trt_live_seed_dis~SILVA_MERDS_rar_trt_live_seed_map$soil_root*SILVA_MERDS_rar_trt_live_seed_map$precip,
+                          permutations = 9999)
+#SILVA_MERDS_rar_trt_live_seed_map$soil_root                                           1   0.38611 0.38611  3.2748 0.16782 0.0001 ***
+#SILVA_MERDS_rar_trt_live_seed_map$precip                                              1   0.33423 0.33423  2.8348 0.14527 0.0006 ***
+
+AICc.PERMANOVA(seed_perm_no_block)
+
+#beta dispersion
+seed_perm.mod=betadisper(SILVA_MERDS_rar_trt_live_seed_dis, with(SILVA_MERDS_rar_trt_live_seed_map, interaction(soil_root,precip)))
+plot(seed_perm.mod)
+boxplot(seed_perm.mod)
+anova(seed_perm.mod)
+(mod.HSDseed <- TukeyHSD(seed_perm.mod))
+plot(mod.HSD015)
+seed_perm.mod_perm <- permutest(seed_perm.mod, permutations = 9999, pairwise = TRUE)
+seed_perm.mod_stat <- permustats(seed_perm.mod_perm)
+summary(seed_perm.mod_stat)
+
 
 
 #####Sterile Analyses ####
@@ -735,7 +926,7 @@ SILVA_MERDS_rar_sterile_map=sample_data(SILVA_MERDS_rar_sterile)
 SILVA_MERDS_rar_sterile_map$soil_root=with(SILVA_MERDS_rar_sterile_map, interaction(soil_status,root_association))
 SILVA_MERDS_rar_sterile_dis=distance(SILVA_MERDS_rar_sterile,method = "bray")
 
-adonis(SILVA_MERDS_rar_sterile_dis~SILVA_MERDS_rar_sterile_map$precip*SILVA_MERDS_rar_sterile_map$life_stage
+sterile_perm=adonis(SILVA_MERDS_rar_sterile_dis~SILVA_MERDS_rar_sterile_map$precip*SILVA_MERDS_rar_sterile_map$life_stage
        +as.factor(SILVA_MERDS_rar_sterile_map$block), permutations = 9999)
 
 "Terms added sequentially (first to last)
@@ -749,6 +940,22 @@ Residuals                                                                  8   1
 Total                                                                     14   2.87234                 1.00000         
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1 "
+
+AICc.PERMANOVA(sterile_perm)
+
+sterile_perm_no_block=adonis(SILVA_MERDS_rar_sterile_dis~SILVA_MERDS_rar_sterile_map$precip*SILVA_MERDS_rar_sterile_map$life_stage, 
+                             permutations = 9999)
+
+"Terms added sequentially (first to last)
+
+                                                                          Df SumsOfSqs MeanSqs F.Model      R2 Pr(>F)    
+SILVA_MERDS_rar_sterile_map$precip                                         1   0.38409 0.38409  2.7180 0.13372 0.0086 ** 
+SILVA_MERDS_rar_sterile_map$life_stage                                     1   0.72564 0.72564  5.1349 0.25263 0.0001 ***
+SILVA_MERDS_rar_sterile_map$precip:SILVA_MERDS_rar_sterile_map$life_stage  1   0.20814 0.20814  1.4729 0.07246 0.1328    
+Residuals                                                                 11   1.55446 0.14131         0.54118           
+Total                                                                     14   2.87234                 1.00000  "
+
+AICc.PERMANOVA(sterile_perm_no_block)
 
 #SIMPER Analyses
 
@@ -1411,6 +1618,7 @@ summary(SILVA_MERDS_rar_trt_live_trans_10_prop_OTU_M)
                                                        "Rhizosphere\nDrought"))+scale_fill_brewer(palette="Paired")+
     guides(fill=guide_legend(title="Phyla")))
 
+#####
 
 #Diversity 
 #let's just look at the treatments
@@ -1420,7 +1628,8 @@ nrow(SILVA_MERDS_rar.divfil_trt_trans)
 bact_obs_rich_model_trans= lm(log(Observed)~soil_root*precip+as.factor(block), data= SILVA_MERDS_rar.divfil_trt_trans)
 qqPlot(resid(bact_obs_rich_model_trans))
 hist(resid(bact_obs_rich_model_trans))
-
+shapiro.test(resid(bact_obs_rich_model_trans))
+#0.9577
 Anova(bact_obs_rich_model_trans, type=3)
 #soil_root          17.05  2   177.4953 3.625e-11 ***
 #precip              0.28  1     5.8152   0.02916 *   
@@ -1441,6 +1650,17 @@ emmeans(bact_obs_rich_model_trans, pairwise~soil_root)
 #L.B - L.R   0.1792 0.155 15   1.156 0.4961 
 #S.B - L.R  -1.7127 0.155 15 -11.051 <.0001 
 
+bact_obs_rich_model_trans_no_block= lm(log(Observed)~soil_root*precip, data= SILVA_MERDS_rar.divfil_trt_trans)
+qqPlot(resid(bact_obs_rich_model_trans_no_block))
+hist(resid(bact_obs_rich_model_trans_no_block))
+shapiro.test(resid(bact_obs_rich_model_trans_no_block))
+#0.8875
+
+Anova(bact_obs_rich_model_trans_no_block, type=3)
+#soil_root          17.05  2   195.2992 6.249e-13 ***
+#precip              0.28  1     6.3985   0.02098 * 
+
+AIC(bact_obs_rich_model_trans,bact_obs_rich_model_trans_no_block)
 
 SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g=SILVA_MERDS_rar.divfil_trt_trans %>% group_by(soil_root,precip)
 obs_rich_precip_trans=summarise_at(SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g, 
@@ -1475,6 +1695,9 @@ bact_inv_simp_model_trans= lm((InvSimpson)^(-.5)~soil_root*precip+as.factor(bloc
 qqPlot(resid(bact_inv_simp_model_trans))
 hist(resid(bact_inv_simp_model_trans))
 boxCox(bact_inv_simp_model_trans)
+shapiro.test(resid(bact_inv_simp_model_trans))
+#0.5401
+
 Anova(bact_inv_simp_model_trans, type=3)
 #soil_root        0.06758  2   7.9341   0.00446 ** 
 #precip           0.01918  1   4.5038   0.05088 .  
@@ -1494,6 +1717,19 @@ emmeans(bact_inv_simp_model_trans, pairwise~soil_root|precip)
 #L.B - S.B  -0.1640 0.0461 15 -3.553  0.0077 
 #L.B - L.R  -0.0708 0.0461 15 -1.535  0.3035 
 #S.B - L.R   0.0931 0.0461 15  2.018  0.1420 
+
+bact_inv_simp_model_trans_no_block= lm((InvSimpson)^(-.5)~soil_root*precip, data= SILVA_MERDS_rar.divfil_trt_trans)
+qqPlot(resid(bact_inv_simp_model_trans_no_block))
+hist(resid(bact_inv_simp_model_trans_no_block))
+boxCox(bact_inv_simp_model_trans_no_block)
+shapiro.test(resid(bact_inv_simp_model_trans_no_block))
+#0.3567
+
+Anova(bact_inv_simp_model_trans_no_block, type=3)
+#soil_root        0.06758  2   8.4886  0.002532 ** 
+#precip           0.01918  1   4.8185  0.041510 * 
+
+AIC(bact_inv_simp_model_trans,bact_inv_simp_model_trans_no_block)
 
 SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g=SILVA_MERDS_rar.divfil_trt_trans %>% group_by(soil_root,precip)
 inv_simp_precip_trans=summarise_at(SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g, 
@@ -2049,6 +2285,8 @@ bact_obs_rich_model_seed= lm(log(Observed)~soil_root*precip+as.factor(block), da
 qqPlot(resid(bact_obs_rich_model_seed))
 hist(resid(bact_obs_rich_model_seed))
 boxCox(bact_obs_rich_model_seed)
+shapiro.test(resid(bact_obs_rich_model_seed))
+#0.5636
 Anova(bact_obs_rich_model_seed, type=3)
 #soil_root         16.28  2   318.5927 2.123e-12 ***
 
@@ -2069,6 +2307,18 @@ emmeans(bact_obs_rich_model_seed, pairwise~soil_root|precip)
 #L.B - S.B    1.883 0.129 14  14.602 <.0001 
 #L.B - L.R   -0.290 0.116 14  -2.499 0.0622 
 #S.B - L.R   -2.173 0.138 14 -15.697 <.0001 
+
+bact_obs_rich_model_seed_no_block= lm(log(Observed)~soil_root*precip, data= SILVA_MERDS_rar.divfil_trt_seed)
+qqPlot(resid(bact_obs_rich_model_seed_no_block))
+hist(resid(bact_obs_rich_model_seed_no_block))
+boxCox(bact_obs_rich_model_seed_no_block)
+shapiro.test(resid(bact_obs_rich_model_seed_no_block))
+#0.6233
+Anova(bact_obs_rich_model_seed_no_block, type=3)
+#soil_root         18.95  2   344.8049 1.741e-14 ***
+
+AIC(bact_obs_rich_model_seed,bact_obs_rich_model_seed_no_block)
+
 SILVA_MERDS_rar.divfil_trt_seed %>% group_by(soil_root) %>% summarise_at("Observed", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
 
 
@@ -2110,6 +2360,8 @@ bact_inv_simp_model_seed= lm(log(InvSimpson)~soil_root*precip+as.factor(block), 
 qqPlot(resid(bact_inv_simp_model_seed))
 hist(resid(bact_inv_simp_model_seed))
 boxCox(bact_inv_simp_model_seed)
+shapiro.test(resid(bact_inv_simp_model_seed))
+#0.4042
 Anova(bact_inv_simp_model_seed, type=3)
 #soil_root         17.314  2  11.9446 0.0009404 ***
 
@@ -2134,6 +2386,18 @@ emmeans(bact_inv_simp_model_seed, pairwise~soil_root|precip)
 #L.B - S.B    0.214 0.687 14  0.312  0.9480 
 #L.B - L.R   -1.579 0.617 14 -2.557  0.0559 
 #S.B - L.R   -1.793 0.737 14 -2.432  0.0702 
+
+
+bact_inv_simp_model_seed_no_block= lm(log(InvSimpson)~soil_root*precip, data= SILVA_MERDS_rar.divfil_trt_seed)
+qqPlot(resid(bact_inv_simp_model_seed_no_block))
+hist(resid(bact_inv_simp_model_seed_no_block))
+boxCox(bact_inv_simp_model_seed_no_block)
+shapiro.test(resid(bact_inv_simp_model_seed_no_block))
+#0.4735
+Anova(bact_inv_simp_model_seed_no_block, type=3)
+#soil_root         21.167  2  16.4729 0.0001051 ***
+
+AIC(bact_inv_simp_model_seed,bact_inv_simp_model_seed_no_block)
 
 SILVA_MERDS_rar.divfil_trt_seed_precip_soil_g=SILVA_MERDS_rar.divfil_trt_seed %>% group_by(soil_root,precip)
 inv_simp_precip_seed=summarise_at(SILVA_MERDS_rar.divfil_trt_seed_precip_soil_g, 
