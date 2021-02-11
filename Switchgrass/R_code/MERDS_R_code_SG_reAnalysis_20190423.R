@@ -153,6 +153,8 @@ Anova(day_t0_germ_model_no_block, type=3)
 #precip           0.01181  1   3.2436 0.07739 .  
 #soil_root        0.03085  2   4.2363 0.01964 * 
 
+emmeans(day_t0_germ_model_no_block, pairwise~soil_root|precip)
+
 AIC(day_t0_germ_model,day_t0_germ_model_no_block)
 
 dataSG_seed_1st_germ_trt_na=subset(dataSG_seed_1st_germ_trt, !is.na(t0_germ))
@@ -225,7 +227,7 @@ fin_dataSG_seed_surv_trt$soil_root=with(fin_dataSG_seed_surv_trt, interaction(so
 fin_dataSG_seed_surv_trt %>% group_by(soil_root, precip)  %>% summarise_at("germinated", ~sum(.))
 
 #I am going to make a column with the total number of seedlings (estimated since we did not mark seedlings
-#as they germinated) based off iif the "germinated" and "tot_num_germ_harvest"
+#as they germinated) based off if the "germinated" and "tot_num_germ_harvest"
 
 
 fin_dataSG_seed_surv_trt_sub1=subset(fin_dataSG_seed_surv_trt, germinated>0&tot_num_germ_harvest==0)
@@ -338,6 +340,8 @@ Anova(seed_germ_model_no_block, type=3)
 #soil_root         11.3950  2   0.003354 **
 #precip:soil_root   6.4784  2   0.039196 *
 
+emmeans(seed_germ_model_no_block, pairwise~soil_root|precip)
+
 AIC(seed_germ_model,seed_germ_model_no_block)
 
 #negative binomial 
@@ -429,37 +433,90 @@ ggarrange(pot_germination_seedling_p,rate_germination_seedling_p,ncol = 2,  lege
 
 
 #now lets look at the total number of germinates
+#####Diagnostic plots for probablity disturbutions####
 
+#https://ase.tufts.edu/gsc/gradresources/guidetomixedmodelsinr/mixed%20model%20guide.html
+require(MASS)
+
+#I want no zeros
+fin_dataSG_seed_surv_trt_tot_seedling$tot_num_germ.t <- fin_dataSG_seed_surv_trt_tot_seedling$tot_num_germ + 1
+min(fin_dataSG_seed_surv_trt_tot_seedling$tot_num_germ.t)
+
+# lnorm means lognormal
+qqp(fin_dataSG_seed_surv_trt_tot_seedling$tot_num_germ.t, "lnorm")
+
+# qqp requires estimates of the parameters of the negative binomial, Poisson
+# and gamma distributions. You can generate estimates using the fitdistr
+# function. Save the output and extract the estimates of each parameter as I
+# have shown below.
+nbinom <- fitdistr(fin_dataSG_seed_surv_trt_tot_seedling$tot_num_germ.t, "Negative Binomial")
+qqp(fin_dataSG_seed_surv_trt_tot_seedling$tot_num_germ.t, "nbinom", size = nbinom$estimate[[1]], mu = nbinom$estimate[[2]])
+
+poisson <- fitdistr(fin_dataSG_seed_surv_trt_tot_seedling$tot_num_germ.t, "Poisson")
+qqp(fin_dataSG_seed_surv_trt_tot_seedling$tot_num_germ.t, "pois", lambda=poisson$estimate)
+
+gamma <- fitdistr(fin_dataSG_seed_surv_trt_tot_seedling$tot_num_germ.t, "gamma")
+qqp(fin_dataSG_seed_surv_trt_tot_seedling$tot_num_germ.t, "gamma", shape = gamma$estimate[[1]], rate = gamma$estimate[[2]])
 
 hist(fin_dataSG_seed_surv_trt_tot_seedling$tot_num_germ)
 
-seed_num_germ_model= glm.nb((tot_num_germ+1)~precip*soil_root+as.factor(block), data= fin_dataSG_seed_surv_trt_tot_seedling)
+seed_num_germ_model= lm((tot_num_germ+1)^(1/3)~precip*soil_root+as.factor(block), data= fin_dataSG_seed_surv_trt_tot_seedling)
 qqPlot(resid(seed_num_germ_model))
 hist(resid(seed_num_germ_model))
 shapiro.test(resid(seed_num_germ_model))
-#p-value = 0.0005655
+#p-value = 0.01155
+
 Anova(seed_num_germ_model, type=3)
-#nada sig
+#precip             0.245  1    8.8857  0.003806 ** 
+#soil_root          0.273  2    4.9524  0.009382 ** 
 emmeans(seed_num_germ_model, ~precip)
 emmeans(seed_num_germ_model, pairwise~soil_root)
 
-fin_dataSG_seed_surv_trt_w_germ_soil_root_g=group_by(fin_dataSG_seed_surv_trt_tot_seedling, soil_root)
-overal_num_germ_soil_root=summarise_at(fin_dataSG_seed_surv_trt_w_germ_soil_root_g, "tot_num_germ", funs(mean,sd))
-
-ggplot(overal_num_germ_soil_root, aes(soil_root,mean))+geom_bar(stat="identity", color="black",aes(fill=soil_root))+
-  scale_fill_manual(values = c("gray", "white", "black"),labels=c("Bulk","Sterile","Rhizo"))+
-  scale_x_discrete(limits=c("S.B", "L.B", "L.R"),labels=c("Sterile","Bulk","Rhizo"))+ylab("Num germ with zeros")
+emmeans(seed_num_germ_model, pairwise~soil_root|precip)
 
 
+seed_num_germ_model_no_block= lm((tot_num_germ+1)^(1/3)~precip*soil_root, data= fin_dataSG_seed_surv_trt_tot_seedling)
+qqPlot(resid(seed_num_germ_model_no_block))
+hist(resid(seed_num_germ_model_no_block))
+shapiro.test(resid(seed_num_germ_model_no_block))
+#p-value = 0.0005655
 
-fin_dataSG_seed_surv_trt_precip_g=group_by(fin_dataSG_seed_surv_trt_tot_seedling, precip)
-overal_germ_precip=summarise_at(fin_dataSG_seed_surv_trt_precip_g, "germinated", mean)
+Anova(seed_num_germ_model_no_block, type=3)
+#precip             0.245  1    8.5377  0.004467 ** 
+#soil_root          0.273  2    4.7585  0.011024 * 
 
-ggplot(overal_germ_precip, aes(precip,germinated))+geom_bar(stat="identity", color="black",aes(fill=precip))+
-  scale_fill_manual(values = c("gray", "white"),labels=c("Ambient","Drought"))+
-  scale_x_discrete(labels=c("Ambient","Drought"))+ylab("At least one germinate")
+AIC(seed_num_germ_model,seed_num_germ_model_no_block)
+
+seed_num_germ_model_no_block.2= lm(log(tot_num_germ+1)~precip*soil_root, data= fin_dataSG_seed_surv_trt_tot_seedling)
+qqPlot(resid(seed_num_germ_model_no_block.2))
+hist(resid(seed_num_germ_model_no_block.2))
+shapiro.test(resid(seed_num_germ_model_no_block.2))
+#p-value = 0.0006849
+
+Anova(seed_num_germ_model_no_block.2, type=3)
 
 
+emmeans(seed_num_germ_model_no_block, pairwise~soil_root|precip)
+
+fin_dataSG_seed_surv_trt_tot_seedling_g=fin_dataSG_seed_surv_trt_tot_seedling %>% group_by(soil_root,precip)
+germination_tot_soil_root_precip=summarise_at(fin_dataSG_seed_surv_trt_tot_seedling_g, 
+                                   "tot_num_germ", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+germination_tot_soil_root_precip$mean_per=(germination_tot_soil_root_precip$mean/10)*100
+germination_tot_soil_root_precip$se_per=(germination_tot_soil_root_precip$se/10)*100
+treatment_order=c("S.B","L.B","L.R")
+(germination_tot_seedling_p=ggplot(germination_tot_soil_root_precip, aes(x=precip,y=mean_per, ymin = mean_per-se_per, ymax= mean_per+se_per,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+    geom_errorbar(position=position_dodge(width=0.9), width=0.2, size=1)+
+    scale_fill_manual(values = c( "white","light gray", "dark grey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Percentage germination per pot")+theme_bw()+ylim(c(0,21))+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = c(0.85,.9), legend.text=element_text(size=20),
+          legend.background = element_rect(size=0.5,linetype="solid",colour ="black")))
+
+
+#####Combined germination rate and number of germ graph#####
+ggarrange(germination_tot_seedling_p,rate_germination_seedling_p,ncol = 2,  legend = "none")
+#15x7.38
 
 #now lets look at the total number of germinates given there was at least one germinate
 
@@ -536,6 +593,8 @@ shapiro.test(resid(seed_surv_germ_model_no_block))
 
 Anova(seed_surv_germ_model_no_block, type=3)
 #soil_root          7.1039  2    0.02867 *
+
+emmeans(seed_surv_germ_model_no_block, pairwise~soil_root|precip)
 
 AIC(seed_surv_germ_model,seed_surv_germ_model_no_block)
 
@@ -635,6 +694,9 @@ shapiro.test(resid(seed_biomas_model_no_block))
 Anova(seed_biomas_model_no_block, type=3)
 #soil_root          7.220  2   3.9802 0.0267300 *  
 #precip:soil_root  18.153  2  10.0075 0.0003104 ***
+
+emmeans(seed_biomas_model_no_block, pairwise~soil_root|precip)
+
 AIC(seed_biomas_model,seed_biomas_model_no_block)
 
 fin_dataSG_biomass_seed_surv_trt_w_germ_soil_root_precip_g=fin_dataSG_biomass_seed_surv_trt_w_germ %>% group_by(soil_root,precip)
@@ -727,6 +789,8 @@ summary(fin_dataSG_biomass_seed_surv_trt_w_germ)
 root_shoot_seed_model= lm(log(root_shoot)~precip*soil_root+as.factor(block), data= fin_dataSG_biomass_seed_surv_trt_w_germ)
 qqPlot(resid(root_shoot_seed_model))
 hist(resid(root_shoot_seed_model))
+shapiro.test(resid(root_shoot_seed_model))
+#0.4825
 
 Anova(root_shoot_seed_model, type=3)
 #precip             6.246  1   8.2080  0.007008 ** 
@@ -742,10 +806,14 @@ emmeans(root_shoot_seed_model, pairwise~soil_root*precip, adjust ="fdr")
 root_shoot_seed_model_no_block= lm(log(root_shoot)~precip*soil_root, data= fin_dataSG_biomass_seed_surv_trt_w_germ)
 qqPlot(resid(root_shoot_seed_model_no_block))
 hist(resid(root_shoot_seed_model_no_block))
+shapiro.test(resid(root_shoot_seed_model_no_block))
+#0.2474
 
 Anova(root_shoot_seed_model_no_block, type=3)
 #precip             6.323  1   7.8877  0.007737 ** 
 #precip:soil_root   4.828  2   3.0113  0.060792 .
+
+emmeans(root_shoot_seed_model_no_block, pairwise~soil_root|precip)
 
 AIC(root_shoot_seed_model,root_shoot_seed_model_no_block)
 
@@ -1502,6 +1570,8 @@ Anova(SG_soil_nit_model_no_block, type=3)
 #soil_root          9.913  2  16.845 0.0021117 ** 
 #precip:soil_root   8.826  2  14.998 0.0029466 ** 
 
+emmeans(SG_soil_nit_model_no_block, pairwise~soil_root|precip)
+
 AIC(SG_soil_nit_model,SG_soil_nit_model_no_block)
 
 SG_inorg_N_seed_trt_soil_root_precip_g=SG_inorg_N_seed_trt %>% group_by(soil_root,precip)
@@ -1553,6 +1623,8 @@ shapiro.test(resid(SG_soil_amm_model_no_block))
 #7.899e-05
 Anova(SG_soil_amm_model_no_block, type=3)
 #Nada sig
+
+emmeans(SG_soil_amm_model, pairwise~soil_root|precip)
 
 AIC(SG_soil_amm_model,SG_soil_amm_model_no_block)
 
@@ -1773,6 +1845,9 @@ Anova(trans_biomas_model_no_block, type=3)
 #precip            31.95  1  12.8430 0.0005671 ***
 #soil_root         23.30  2   4.6835 0.0117928 *  
 #precip:soil_root  15.88  2   3.1919 0.0461250 * 
+
+emmeans(trans_biomas_model_no_block, pairwise~soil_root|precip)
+
 AIC(trans_biomas_model,trans_biomas_model_no_block)
 
 
@@ -2165,7 +2240,9 @@ shapiro.test(resid(root_shoot_model_na_no_block))
 boxCox(root_shoot_model_na_no_block)
 
 Anova(root_shoot_model_na_no_block, type=3)
+#nada sig
 
+emmeans(root_shoot_model_na_no_block, pairwise~soil_root|precip)
 
 AIC(root_shoot_model_na,root_shoot_model_na_no_block)
 
@@ -2771,12 +2848,16 @@ SRL_trans_model_no_block= lm((SRL_length_drymass)~precip*soil_root, data= SG_roo
 qqPlot(resid(SRL_trans_model_no_block))
 hist(resid(SRL_trans_model_no_block))
 boxCox(SRL_trans_model_no_block)
+shapiro.test(resid(SRL_trans_model_no_block))
+#0.6666
 #plot(SRL_trans_model_pw)
 
 
 Anova(SRL_trans_model_no_block, type=3)
 #precip            112669528  1   4.8980   0.03810 *  
 #precip:soil_root  166002900  2   3.6082   0.04498 *  
+
+emmeans(SRL_trans_model_no_block, pairwise~soil_root|precip)
 
 AIC(SRL_trans_model,SRL_trans_model_no_block)
 
@@ -2822,11 +2903,15 @@ qqPlot(resid(RLD_trans_model_no_block))
 hist(resid(RLD_trans_model_no_block))
 #plot(RLD_trans_model_pw)
 boxCox(RLD_trans_model_no_block)
+shapiro.test(resid(RLD_trans_model_no_block))
+#0.5027
 
 Anova(RLD_trans_model_no_block, type=3)
 #precip            0.4261  1   5.0492  0.035515 *  
 #soil_root         6.3855  2  37.8319 1.092e-07 ***
 #precip:soil_root  1.2362  2   7.3238  0.003864 **
+
+emmeans(RLD_trans_model_no_block, pairwise~soil_root|precip)
 
 AIC(RLD_trans_model,RLD_trans_model_no_block)
 
@@ -2865,7 +2950,7 @@ rhizosheath_model= lm(log(RhizosheathSoil_DryRoots_g +1)~precip*soil_root+as.fac
 qqPlot(resid(rhizosheath_model))
 hist(resid(rhizosheath_model))
 shapiro.test(resid(rhizosheath_model))
-#p-value = 0.06145
+#p-value = 0.5554
 #plot(rhizosheath_model_pw)
 boxCox(rhizosheath_model)
 
@@ -2877,12 +2962,14 @@ rhizosheath_model_no_block= lm(log(RhizosheathSoil_DryRoots_g +1)~precip*soil_ro
 qqPlot(resid(rhizosheath_model_no_block))
 hist(resid(rhizosheath_model_no_block))
 shapiro.test(resid(rhizosheath_model_no_block))
-#p-value = 0.06145
+#p-value = 0.6068
 #plot(rhizosheath_model_pw)
 boxCox(rhizosheath_model_no_block)
 
 Anova(rhizosheath_model_no_block, type=3)
 #nada sig
+
+emmeans(rhizosheath_model_no_block, pairwise~soil_root|precip)
 
 AIC(rhizosheath_model,rhizosheath_model_no_block)
 
@@ -3059,6 +3146,10 @@ ggplot(soil_moist_soil_root_precip, aes(x=precip,y=mean, ymin = mean-se, ymax= m
   scale_x_discrete(labels=c("Ambient","Drought"))+ylab("Soil moisture in block C")+
   geom_text(aes(y=mean-se-0.01, label=n),position=position_dodge(width=0.9))+theme_bw()
 
+
+
+
+
 #####Soil nitrogen####
 
 summary(SG_inorg_N_trt)
@@ -3105,6 +3196,8 @@ Anova(SG_soil_nit_trans_model_no_block, type=3)
 #soil_root          6.34  2    8.3557  0.002303 ** 
 #precip:soil_root   3.18  2    4.1948  0.030110 *  
 
+emmeans(SG_soil_nit_trans_model_no_block, pairwise~soil_root|precip)
+
 AIC(SG_soil_nit_trans_model,SG_soil_nit_trans_model_no_block)
 
 trans_inorg_N_seed_trt_soil_root_precip_g=SG_inorg_N_trans_trt %>% group_by(soil_root,precip)
@@ -3145,6 +3238,9 @@ SG_soil_amm_trans_model= lm(log(ug_N_NH4_g_dry_soil_negto0+0.007)~precip*soil_ro
 qqPlot(resid(SG_soil_amm_trans_model))
 hist(resid(SG_soil_amm_trans_model))
 #plot(SG_soil_amm_trans_model)
+shapiro.test(resid(SG_soil_amm_trans_model))
+#0.2646
+
 Anova(SG_soil_amm_trans_model, type=3)
 #precip            8.035  1  5.4444 0.0330058 *  
 #soil_root        37.549  2 12.7215 0.0004936 ***
@@ -3160,10 +3256,15 @@ SG_soil_amm_trans_model_no_block= lm(log(ug_N_NH4_g_dry_soil_negto0+0.007)~preci
 qqPlot(resid(SG_soil_amm_trans_model_no_block))
 hist(resid(SG_soil_amm_trans_model_no_block))
 #plot(SG_soil_amm_trans_model)
+shapiro.test(resid(SG_soil_amm_trans_model_no_block))
+#0.3981
+
 Anova(SG_soil_amm_trans_model_no_block, type=3)
 #precip            7.010  1  5.3624   0.03131 *  
 #soil_root        43.257  2 16.5458 5.755e-05 ***
 #precip:soil_root  8.962  2  3.4281   0.05246 . 
+
+emmeans(SG_soil_amm_trans_model_no_block, pairwise~soil_root|precip)
 
 AIC(SG_soil_amm_trans_model,SG_soil_amm_trans_model_no_block)
 
@@ -3301,6 +3402,9 @@ Anova(SG_Soil_nit_combined_no_block, type=3)
 #soil_root:life_stage          3.60  2    5.0322  0.013883 *  
 #precip:soil_root:life_stage   5.34  2    7.4752  0.002609 ** 
 
+emmeans(SG_Soil_nit_combined_no_block, pairwise~soil_root|precip)
+
+
 AIC(SG_Soil_nit_combined,SG_Soil_nit_combined_no_block)
 
 #SOil ammonium
@@ -3322,6 +3426,8 @@ Anova(SG_Soil_amm_combined_no_block, type=3)
 #precip                       44.035  1 11.5159  0.002146 ** 
 #soil_root                    36.989  2  4.8366  0.016021 *   
 #precip:life_stage            13.906  1  3.6367  0.067211 .  
+
+emmeans(SG_Soil_amm_combined_no_block, pairwise~soil_root|precip)
 
 AIC(SG_Soil_amm_combined,SG_Soil_amm_combined_no_block)
 
@@ -3381,6 +3487,7 @@ Anova(SG_Soil_potweight_combined_no_block, type=3)
 
 AIC(SG_Soil_potweight_combined,SG_Soil_potweight_combined_no_block)
 
+emmeans(SG_Soil_potweight_combined_no_block, pairwise~soil_root|precip)
 
 
 dataSG_potweight_trt_sub_out_end %>% group_by(precip)  %>% summarise_at("per_ch_potweight_bio_crt", list(~mean(.),~var(.)))
@@ -3501,6 +3608,8 @@ shapiro.test(resid(SG_soil_VWC_model_no_block))
 Anova(SG_soil_VWC_model_no_block, type=3)
 #precip                       307.12  1  7.9808  0.008782 ** 
 #life_stage                   135.01  1  3.5084  0.071923 .  
+emmeans(SG_soil_VWC_model_no_block, pairwise~soil_root|precip)
+
 
 AIC(SG_soil_VWC_model,SG_soil_VWC_model_no_block)
 
@@ -3517,8 +3626,20 @@ treatment_order=c("S.B","L.B","L.R")
     geom_text(aes(y=2, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
     theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
           legend.position = "none"))
-
 #9x8
+soil_grav_moist_out_trt
+
+#L.B A versus D
+(10.1-15.9)/15.9
+#-0.3647799
+#S.B A versus D
+(7.78-11.3)/11.3
+#-0.3115044
+#L.R A versus D
+(6.77-15.2)/15.2
+#-0.5546053
+
+
 #there is no significant effect of soil_root on soil moisture when using gravimetric
 #Is this just because of the samples choosen to measure gravimetric moisture?
 
@@ -3555,7 +3676,12 @@ Anova(SG_soil_VWC_pot_w_model_no_block, type=3)
 #soil_root                   0.00833  2   4.5563 0.0197257 *  
 #life_stage                  0.00721  1   7.8899 0.0091285 ** 
 
+emmeans(SG_soil_VWC_pot_w_model_no_block, pairwise~soil_root|precip)
+
 AIC(SG_soil_VWC_pot_w_model,SG_soil_VWC_pot_w_model_no_block)
+
+
+
 
 combin_grav_moist_PW_seed_trt_soil_root_precip_g=SG_inorg_N_trt_pw %>% group_by(soil_root,precip)
 PW_soil_grav_moist_out_trt=summarise_at(combin_grav_moist_PW_seed_trt_soil_root_precip_g, 
@@ -3597,6 +3723,14 @@ shapiro.test(resid(SG_Soil_nit_start))
 #p-value = 0.1575
 Anova(SG_Soil_nit_start, type=3)
 
+SG_Soil_nit_start_no_block= lm((ug_N_NO3_g_dry_soil)~soil_root, data= SG_start_inorg_N)
+qqPlot(resid(SG_Soil_nit_start_no_block))
+hist(resid(SG_Soil_nit_start_no_block))
+shapiro.test(resid(SG_Soil_nit_start_no_block))
+#p-value = 0.2278
+Anova(SG_Soil_nit_start_no_block, type=3)
+
+AIC(SG_Soil_nit_start,SG_Soil_nit_start_no_block)
 
 SG_start_inorg_N_soil_root_g=SG_start_inorg_N %>% group_by(soil_root)
 soil_nit_START_trt=summarise_at(SG_start_inorg_N_soil_root_g, 
@@ -3627,6 +3761,16 @@ Anova(SG_Soil_amm_start, type=3)
 #soil_root        1911.17  2  65.7348 1.083e-05 ***
 
 emmeans(SG_Soil_amm_start, pairwise~soil_root)
+
+SG_Soil_amm_start_no_block= lm((ug_N_NH4_g_dry_soil)~soil_root, data= SG_start_inorg_N)
+qqPlot(resid(SG_Soil_amm_start_no_block))
+hist(resid(SG_Soil_amm_start_no_block))
+shapiro.test(resid(SG_Soil_amm_start_no_block))
+#p-value = 0.001853
+Anova(SG_Soil_amm_start_no_block, type=3)
+#soil_root   1911.17  2  48.924 1.700e-06 ***
+
+AIC(SG_Soil_amm_start,SG_Soil_amm_start_no_block)
 
 SG_start_inorg_N_soil_root_g=SG_start_inorg_N %>% group_by(soil_root)
 soil_amm_START_trt=summarise_at(SG_start_inorg_N_soil_root_g, 

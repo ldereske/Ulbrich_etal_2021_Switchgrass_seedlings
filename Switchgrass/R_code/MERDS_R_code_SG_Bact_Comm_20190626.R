@@ -503,6 +503,42 @@ summary(SILVA_MERDS_rar_live_trans_ord_points)
   geom_label_repel(size=3,aes(label = Plant_Number))+theme_bw()+scale_fill_manual(values = c("white","dark grey","black"))+scale_shape_manual(values = c(21,24))+
   ggtitle(label = "Microbial Soils")+theme(plot.title = element_text(hjust = 0.5)))
 
+#Let's look at the env fit vectors
+
+(trans_meta_vec <-envfit(SILVA_MERDS_rar_live_trans_ord, data.frame(SILVA_MERDS_rar_live_trans_map[,c("total_biomass","ug_N_NO3_g_dry_soil",
+                                                                                           "ug_N_NH4_g_dry_soil_negto0",
+                                                                                           "percent_soil_moisture_dry_weight")]), perm=9999, na.rm=TRUE)) #I think i added the environmental data
+trans_meta_vec.df <-as.data.frame(trans_meta_vec$vectors$arrows*sqrt(trans_meta_vec$vectors$r))
+trans_meta_vec.df$huh <-rownames(trans_meta_vec.df)
+scores(trans_meta_vec, "vectors")
+summary(trans_meta_vec)
+
+(live_trans_ord_p=ggplot(data=SILVA_MERDS_rar_live_trans_ord_points, aes(x=MDS1,y=MDS2))+
+    geom_point(size=5, aes(shape=root_association, fill=precip))+geom_label_repel(size=3,aes(label = ug_N_NO3_g_dry_soil))+
+    theme_bw()+geom_segment(data=trans_meta_vec.df, aes(x=0,xend=NMDS1,y=0,yend=NMDS2),
+                            arrow = arrow(length=unit(0.5, "cm")), colour="grey")+
+    geom_text_repel (data=trans_meta_vec.df, aes(x=NMDS1, y=NMDS2, label=huh), size=5)+
+    scale_shape_manual(values = c(21,24))+scale_fill_manual(values = c("white","dark grey","black"))+
+    ggtitle(label = "Transplant")+theme(plot.title = element_text(hjust = 0.5)))
+
+#Overlay the total biomass
+
+(live_trans_ord_p=ggplot(data=SILVA_MERDS_rar_live_trans_ord_points, aes(x=MDS1,y=MDS2))+
+    geom_point(size=5, aes(shape=root_association, fill=precip))+
+    theme_bw()+geom_label_repel(size=3,aes(label = total_biomass))+
+    scale_shape_manual(values = c(21,24))+scale_fill_manual(values = c("white","dark grey","black"))+
+    ggtitle(label = "Transplant")+theme(plot.title = element_text(hjust = 0.5)))
+
+#Overlay the soil moisture
+
+(live_trans_ord_p=ggplot(data=SILVA_MERDS_rar_live_trans_ord_points, aes(x=MDS1,y=MDS2))+
+    geom_point(size=5, aes(shape=root_association, fill=precip))+
+    theme_bw()+geom_label_repel(size=3,aes(label = percent_soil_moisture_dry_weight))+
+    scale_shape_manual(values = c(21,24))+scale_fill_manual(values = c("white","dark grey","black"))+
+    ggtitle(label = "Transplant")+theme(plot.title = element_text(hjust = 0.5)))
+
+
+#ellipse
 
 (live_trans_ord_p=ggplot(data=SILVA_MERDS_rar_live_trans_ord_points, aes(x=MDS1,y=MDS2))+
     stat_ellipse(level=.5,geom="polygon",alpha=.2,aes(fill=interaction(precip,root_association)))+
@@ -513,10 +549,12 @@ summary(SILVA_MERDS_rar_live_trans_ord_points)
 
 #Hull to group the points
 
-grp.start <- SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip == "Start", 
-                         ][chull(SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip == 
-                                                                   "Start", c("MDS1", "MDS2")]), ]  # hull values 
-nrow(grp.start)
+grp.start_bulk <- SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip == "Start"&
+                                                           SILVA_MERDS_rar_live_trans_ord_points$root_association == "B", 
+                                                         ][chull(SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$life_stage == 
+                                                                                                         "Start"&
+                                                                                                         SILVA_MERDS_rar_live_trans_ord_points$root_association == "B", c("MDS1", "MDS2")]), ] 
+nrow(grp.start_bulk)
 #6
 grp.start_rhizo <- SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip == "Start"&
                                                           SILVA_MERDS_rar_live_trans_ord_points$root_association == "R", 
@@ -551,19 +589,65 @@ grp.Dro_Rhizo=SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_o
                                                                                                     SILVA_MERDS_rar_live_trans_ord_points$root_association == "R",c("MDS1", "MDS2")]), ]  # hull values for grp A
 nrow(grp.Dro_Rhizo)
 
-hull_trans_live=rbind(grp.start,grp.Amb_Bulk,grp.Amb_Rhizo,grp.Dro_Bulk,grp.Dro_Rhizo)
+hull_trans_live=rbind(grp.start_bulk,grp.start_rhizo,grp.Amb_Bulk,grp.Amb_Rhizo,grp.Dro_Bulk,grp.Dro_Rhizo)
 nrow(hull_trans_live)
-#22
+#23
 
 
 (live_trans_ord_hull_p=ggplot(data=SILVA_MERDS_rar_live_trans_ord_points, aes(x=MDS1,y=MDS2))+
     geom_polygon(data=hull_trans_live,aes(alpha=precip,x=MDS1,y=MDS2,fill=interaction(precip,root_association),
                                     group=interaction(precip,root_association)))+
-    scale_alpha_manual(values = c(0.9,0.5,0.5))+
+    scale_alpha_manual(values = c(0.9,0.5,0.6))+
     geom_point(size=5, aes(shape=root_association, fill=interaction(precip,root_association)))+
     theme_bw()+scale_fill_manual(values = c("gray95","dark grey","black","gray95", "dark grey","black"))+
-    scale_shape_manual(values = c(21,24))+
-    ggtitle(label = "Transplant")+theme(plot.title = element_text(hjust = 0.5)))
+    scale_shape_manual(values = c(21,24)))
+
+#+
+#  ggtitle(label = "Transplant")+theme(plot.title = element_text(hjust = 0.5)))
+SILVA_MERDS_rar_live_trans_ord_points$precip_soil_fact=with(SILVA_MERDS_rar_live_trans_ord_points,interaction(precip,root_association))
+levels(SILVA_MERDS_rar_live_trans_ord_points$precip_soil_fact) <- c(levels(SILVA_MERDS_rar_live_trans_ord_points$precip_soil_fact), "Start")
+SILVA_MERDS_rar_live_trans_ord_points$precip_soil_fact[SILVA_MERDS_rar_live_trans_ord_points$precip_soil_fact=="Start.R"] <- "Start"
+SILVA_MERDS_rar_live_trans_ord_points$precip_soil_fact[SILVA_MERDS_rar_live_trans_ord_points$precip_soil_fact=="Start.B"] <- "Start"
+
+grp.start <- SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip_soil_fact == "Start", 
+                                                        ][chull(SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip_soil_fact == 
+                                                                                                        "Start", c("MDS1", "MDS2")]), ] 
+nrow(grp.start)
+#8
+
+
+grp.Amb_Bulk=SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip_soil_fact == "A.B", 
+                                                   ][chull(SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip_soil_fact == 
+                                                                                                   "A.B", c("MDS1", "MDS2")]), ]
+nrow(grp.Amb_Bulk)
+
+grp.Amb_Rhizo=SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip_soil_fact == "A.R", 
+                                                    ][chull(SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip_soil_fact == 
+                                                                                                    "A.R", c("MDS1", "MDS2")]), ]  # hull values for grp A
+nrow(grp.Amb_Rhizo)
+
+
+grp.Dro_Bulk=SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip_soil_fact == "D.B", 
+                                                   ][chull(SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip_soil_fact == 
+                                                                                                   "D.B", c("MDS1", "MDS2")]), ]
+nrow(grp.Dro_Bulk)
+
+grp.Dro_Rhizo=SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip_soil_fact == "D.R", 
+                                                    ][chull(SILVA_MERDS_rar_live_trans_ord_points[SILVA_MERDS_rar_live_trans_ord_points$precip_soil_fact == 
+                                                                                                    "D.R", c("MDS1", "MDS2")]), ]
+nrow(grp.Dro_Rhizo)
+
+hull_trans_live=rbind(grp.start,grp.Amb_Bulk,grp.Amb_Rhizo,grp.Dro_Bulk,grp.Dro_Rhizo)
+nrow(hull_trans_live)
+#22
+
+(live_trans_ord_hull2_p=ggplot(data=SILVA_MERDS_rar_live_trans_ord_points, aes(x=MDS1,y=MDS2))+
+    geom_polygon(data=hull_trans_live,aes(alpha=precip,x=MDS1,y=MDS2,fill=(precip),
+                                          group=(precip_soil_fact)))+
+    scale_alpha_manual(values = c(0.9,0.5,0.6))+
+    geom_point(size=5, aes(shape=root_association, fill=(precip)))+
+    theme_bw()+scale_fill_manual(values = c("gray95","dark grey","black"))+
+    scale_shape_manual(values = c(21,24)))
 
 
 #sterile transplants
@@ -598,6 +682,36 @@ summary(SILVA_MERDS_rar_live_seed_ord_points)
 (live_seed_ord_p_pot_num=ggplot(data=SILVA_MERDS_rar_live_seed_ord_points, aes(x=MDS1,y=MDS2))+geom_point(size=5, aes(shape=root_association, fill=precip))+
     geom_label_repel(size=3,aes(label = Plant_Number))+theme_bw()+scale_fill_manual(values = c("white","dark grey","black"))+scale_shape_manual(values = c(21,24))+
     ggtitle(label = "Microbial Soils")+theme(plot.title = element_text(hjust = 0.5)))
+
+
+
+#Let's look at the env fit vectors
+
+(seed_meta_vec <-envfit(SILVA_MERDS_rar_live_seed_ord, data.frame(SILVA_MERDS_rar_live_seed_map[,c("total_biomass","ug_N_NO3_g_dry_soil",
+                                                                                                      "ug_N_NH4_g_dry_soil_negto0",
+                                                                                                      "percent_soil_moisture_dry_weight",
+                                                                                                   "days_to_germ")]), perm=9999, na.rm=TRUE)) #I think i added the environmental data
+"***VECTORS
+
+NMDS1    NMDS2     r2 Pr(>r)
+total_biomass                    -0.21596  0.97640 0.2486 0.4086
+ug_N_NO3_g_dry_soil               0.95922 -0.28266 0.3180 0.2607
+ug_N_NH4_g_dry_soil_negto0       -0.99795 -0.06395 0.0110 0.9667
+percent_soil_moisture_dry_weight -0.97492 -0.22257 0.0398 0.8628
+days_to_germ                     -0.68761  0.72608 0.0953 0.6966
+Permutation: free
+Number of permutations: 9999"
+
+trans_meta_vec.df <-as.data.frame(trans_meta_vec$vectors$arrows*sqrt(trans_meta_vec$vectors$r))
+trans_meta_vec.df$huh <-rownames(trans_meta_vec.df)
+scores(trans_meta_vec, "vectors")
+summary(trans_meta_vec)
+
+#overlay time to germination
+(live_seed_ord_p=ggplot(data=SILVA_MERDS_rar_live_seed_ord_points, aes(x=MDS1,y=MDS2))+geom_point(size=5, aes(shape=root_association, fill=precip))+
+    theme_bw()+scale_fill_manual(values = c("white","dark grey","black"))+scale_shape_manual(values = c(21,24))+
+    geom_label_repel(size=3,aes(label = days_to_germ))+
+    ggtitle(label = "Seedling")+theme(plot.title = element_text(hjust = 0.5), axis.title.y = element_blank()))
 
 
 
@@ -655,6 +769,53 @@ nrow(hull_seed_live)
     scale_shape_manual(values = c(21,24))+
     ggtitle(label = "Seed-Start")+theme(plot.title = element_text(hjust = 0.5)))
 
+#new version of Hull
+SILVA_MERDS_rar_live_seed_ord_points$precip_soil_fact=with(SILVA_MERDS_rar_live_seed_ord_points,interaction(precip,root_association))
+levels(SILVA_MERDS_rar_live_seed_ord_points$precip_soil_fact) <- c(levels(SILVA_MERDS_rar_live_seed_ord_points$precip_soil_fact), "Start")
+SILVA_MERDS_rar_live_seed_ord_points$precip_soil_fact[SILVA_MERDS_rar_live_seed_ord_points$precip_soil_fact=="Start.R"] <- "Start"
+SILVA_MERDS_rar_live_seed_ord_points$precip_soil_fact[SILVA_MERDS_rar_live_seed_ord_points$precip_soil_fact=="Start.B"] <- "Start"
+
+grp.seed_start <- SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip_soil_fact == "Start", 
+                                                   ][chull(SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip_soil_fact == 
+                                                                                                   "Start", c("MDS1", "MDS2")]), ] 
+nrow(grp.seed_start)
+#5
+
+
+grp.seed_Amb_Bulk=SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip_soil_fact == "A.B", 
+                                                   ][chull(SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip_soil_fact == 
+                                                                                                   "A.B", c("MDS1", "MDS2")]), ]
+nrow(grp.seed_Amb_Bulk)
+#4
+grp.seed_Amb_Rhizo=SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip_soil_fact == "A.R", 
+                                                    ][chull(SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip_soil_fact == 
+                                                                                                    "A.R", c("MDS1", "MDS2")]), ]  # hull values for grp A
+nrow(grp.seed_Amb_Rhizo)
+#4
+
+grp.seed_Dro_Bulk=SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip_soil_fact == "D.B", 
+                                                   ][chull(SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip_soil_fact == 
+                                                                                                   "D.B", c("MDS1", "MDS2")]), ]
+nrow(grp.seed_Dro_Bulk)
+
+grp.seed_Dro_Rhizo=SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip_soil_fact == "D.R", 
+                                                    ][chull(SILVA_MERDS_rar_live_seed_ord_points[SILVA_MERDS_rar_live_seed_ord_points$precip_soil_fact == 
+                                                                                                    "D.R", c("MDS1", "MDS2")]), ]
+nrow(grp.seed_Dro_Rhizo)
+#4
+hull_seed_live=rbind(grp.seed_start,grp.seed_Amb_Bulk,grp.seed_Amb_Rhizo,grp.seed_Dro_Bulk,grp.seed_Dro_Rhizo)
+nrow(hull_seed_live)
+#20
+
+(live_seed_ord_hull2_p=ggplot(data=SILVA_MERDS_rar_live_seed_ord_points, aes(x=MDS1,y=MDS2))+
+    geom_polygon(data=hull_seed_live,aes(alpha=precip,x=MDS1,y=MDS2,fill=(precip),
+                                          group=(precip_soil_fact)))+
+    scale_alpha_manual(values = c(0.9,0.5,0.6))+
+    geom_point(size=5, aes(shape=root_association, fill=(precip)))+
+    theme_bw()+scale_fill_manual(values = c("gray95","dark grey","black"))+
+    scale_shape_manual(values = c(21,24)))
+
+
 
 #sterile seed
 SILVA_MERDS_rar_stl_seed=subset_samples(SILVA_MERDS_rar, soil_status=="S"&life_stage=="S")
@@ -673,7 +834,8 @@ SILVA_MERDS_rar_stl_seed_ord=ordinate(SILVA_MERDS_rar_stl_seed, method = "NMDS",
 
 ggarrange(live_trans_ord_p,live_seed_ord_p,ncol = 2,  legend = "none")
 #10x5.5
-ggarrange(live_trans_ord_hull_p,live_seed_ord_hull_p,ncol = 2,  legend = "none")
+
+ggarrange(live_trans_ord_hull2_p,live_seed_ord_hull2_p,ncol = 2,  legend = "none")
 #10x5.5
 #Remove the sterile since it seems to be driving a lot of this
 
@@ -911,6 +1073,7 @@ ntaxa(SILVA_MERDS_rar_sterile)
 SILVA_MERDS_rar_sterile=prune_taxa(taxa_sums(SILVA_MERDS_rar_sterile) > 0, SILVA_MERDS_rar_sterile)
 ntaxa(SILVA_MERDS_rar_sterile)
 #930
+SILVA_MERDS_rar_sterile_map=sample_data(SILVA_MERDS_rar_sterile)
 SILVA_MERDS_rar_sterile_ord=ordinate(SILVA_MERDS_rar_sterile, method = "NMDS",distance = "bray")
 #*** Solution reached
 #0.1223411
@@ -920,6 +1083,31 @@ plot_ordination(SILVA_MERDS_rar_sterile,SILVA_MERDS_rar_sterile_ord, color="prec
 (sterile_ord_p=plot_ordination(SILVA_MERDS_rar_sterile,SILVA_MERDS_rar_sterile_ord,shape="life_stage")+geom_point(size=5, aes(shape=life_stage, fill=precip))+
     theme_bw()+scale_fill_manual(values = c("white","dark grey","black"))+scale_shape_manual(values = c(22,23))+
     ggtitle(label = "Sterile")+theme(plot.title = element_text(hjust = 0.5)))
+
+(sterile_ord_p=plot_ordination(SILVA_MERDS_rar_sterile,SILVA_MERDS_rar_sterile_ord,shape="life_stage")+geom_point(size=5, aes(shape=life_stage, fill=precip))+
+    theme_bw()+scale_fill_manual(values = c("white","dark grey","black"))+scale_shape_manual(values = c(22,23))+
+    ggtitle(label = "Sterile")+theme(plot.title = element_text(hjust = 0.5)))
+
+#Let's look at the env fit vectors
+
+(sterile_meta_vec <-envfit(SILVA_MERDS_rar_sterile_ord, data.frame(SILVA_MERDS_rar_sterile_map[,c("total_biomass","ug_N_NO3_g_dry_soil",
+                                                                                                      "ug_N_NH4_g_dry_soil_negto0",
+                                                                                                      "percent_soil_moisture_dry_weight")]), perm=9999, na.rm=TRUE)) #I think i added the environmental data
+#percent_soil_moisture_dry_weight -0.60170  0.79872 0.5765 0.0231 *
+sterile_meta_vec.df <-as.data.frame(sterile_meta_vec$vectors$arrows*sqrt(sterile_meta_vec$vectors$r))
+sterile_meta_vec.df$huh <-rownames(sterile_meta_vec.df)
+scores(sterile_meta_vec, "vectors")
+summary(sterile_meta_vec.df)
+
+(sterile_ord_p=plot_ordination(SILVA_MERDS_rar_sterile,SILVA_MERDS_rar_sterile_ord)+geom_point(size=5, aes(shape=life_stage, fill=precip))+
+    theme_bw()+geom_text_repel(size=5, aes(label=percent_soil_moisture_dry_weight))+
+    scale_fill_manual(values = c("white","dark grey","black"))+scale_shape_manual(values = c(22,23))+
+    ggtitle(label = "Sterile")+geom_segment(data=sterile_meta_vec.df, aes(x=0,xend=NMDS1,y=0,yend=NMDS2),
+                                            arrow = arrow(length=unit(0.5, "cm")), colour="grey")+
+    geom_text_repel (data=sterile_meta_vec.df, aes(x=NMDS1, y=NMDS2, label=huh), size=5)+theme(plot.title = element_text(hjust = 0.5)))
+
+
+
 
 
 SILVA_MERDS_rar_sterile_map=sample_data(SILVA_MERDS_rar_sterile)
@@ -1660,6 +1848,9 @@ Anova(bact_obs_rich_model_trans_no_block, type=3)
 #soil_root          17.05  2   195.2992 6.249e-13 ***
 #precip              0.28  1     6.3985   0.02098 * 
 
+emmeans(bact_obs_rich_model_trans_no_block, pairwise~soil_root|precip)
+
+
 AIC(bact_obs_rich_model_trans,bact_obs_rich_model_trans_no_block)
 
 SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g=SILVA_MERDS_rar.divfil_trt_trans %>% group_by(soil_root,precip)
@@ -1728,6 +1919,8 @@ shapiro.test(resid(bact_inv_simp_model_trans_no_block))
 Anova(bact_inv_simp_model_trans_no_block, type=3)
 #soil_root        0.06758  2   8.4886  0.002532 ** 
 #precip           0.01918  1   4.8185  0.041510 * 
+
+emmeans(bact_inv_simp_model_trans_no_block, pairwise~soil_root|precip)
 
 AIC(bact_inv_simp_model_trans,bact_inv_simp_model_trans_no_block)
 
@@ -2317,6 +2510,21 @@ shapiro.test(resid(bact_obs_rich_model_seed_no_block))
 Anova(bact_obs_rich_model_seed_no_block, type=3)
 #soil_root         18.95  2   344.8049 1.741e-14 ***
 
+emmeans(bact_obs_rich_model_seed_no_block, pairwise~soil_root|precip)
+"$contrasts
+precip = A:
+ contrast  estimate    SE df t.ratio p.value
+ L.B - S.B    1.724 0.117 17  14.706 <.0001 
+ L.B - L.R   -0.301 0.117 17  -2.569 0.0497 
+ S.B - L.R   -2.025 0.117 17 -17.275 <.0001 
+
+precip = D:
+ contrast  estimate    SE df t.ratio p.value
+ L.B - S.B    1.897 0.127 17  14.985 <.0001 
+ L.B - L.R   -0.323 0.117 17  -2.752 0.0345 
+ S.B - L.R   -2.220 0.127 17 -17.533 <.0001 
+"
+
 AIC(bact_obs_rich_model_seed,bact_obs_rich_model_seed_no_block)
 
 SILVA_MERDS_rar.divfil_trt_seed %>% group_by(soil_root) %>% summarise_at("Observed", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
@@ -2396,6 +2604,11 @@ shapiro.test(resid(bact_inv_simp_model_seed_no_block))
 #0.4735
 Anova(bact_inv_simp_model_seed_no_block, type=3)
 #soil_root         21.167  2  16.4729 0.0001051 ***
+
+
+emmeans(bact_inv_simp_model_seed_no_block, pairwise~soil_root|precip)
+
+
 
 AIC(bact_inv_simp_model_seed,bact_inv_simp_model_seed_no_block)
 
