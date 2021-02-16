@@ -876,7 +876,7 @@ SILVA_MERDS_rar.divfil$soil_root_stage=with(SILVA_MERDS_rar.divfil, interaction(
 SILVA_MERDS_rar.divfil_start=subset(SILVA_MERDS_rar.divfil, life_stage=="Start")
 nrow(SILVA_MERDS_rar.divfil_start)
 #8
-summary(SILVA_MERDS_rar.divfil_start)
+#summary(SILVA_MERDS_rar.divfil_start)
 ```
 Diagnostic Graphs
 ```{r}
@@ -904,6 +904,26 @@ df_anova_bact_obs_rich_model_start=data.frame(row.names =row.names(anova_bact_ob
 kable(df_anova_bact_obs_rich_model_start,align = "c",digits = c(1,2,2,3), caption= "Starting soil communtiy richness")
 ```
 
+##### Graph for publication
+
+```{r echo=FALSE}
+SILVA_MERDS_rar.divfil_start_precip_soil_g=SILVA_MERDS_rar.divfil_start %>% group_by(soil_root,precip)
+obs_rich_precip_Start=summarise_at(SILVA_MERDS_rar.divfil_start_precip_soil_g, 
+                                   "Observed", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+treatment_order_Start=c("L.B","L.R")
+(Start_obs_richness_p=ggplot(obs_rich_precip_Start,aes(x=factor(soil_root,levels = treatment_order_Start),fill=factor(soil_root,levels = treatment_order_Start)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,2450))+
+    scale_fill_manual(values = c("lightgray", "darkgrey"),labels=c("Bulk","Rhizo"), limits=treatment_order_Start, name=NULL)+
+    scale_x_discrete(labels=c("Bulk","Rhizo"), name=NULL)+ylab("Bacterial richness")+
+    geom_text(aes(y=80, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+```
+
+
+
 
 ### Start community inv Simpson
 
@@ -911,7 +931,7 @@ kable(df_anova_bact_obs_rich_model_start,align = "c",digits = c(1,2,2,3), captio
 SILVA_MERDS_rar.divfil_start=subset(SILVA_MERDS_rar.divfil, life_stage=="Start")
 nrow(SILVA_MERDS_rar.divfil_start)
 #8
-summary(SILVA_MERDS_rar.divfil_start)
+#summary(SILVA_MERDS_rar.divfil_start)
 ```
 Diagnostic Graphs
 ```{r}
@@ -940,6 +960,22 @@ kable(df_anova_bact_InvSimp_model_start,align = "c",digits = c(1,2,2,3), caption
 ```
 
 
+##### Graph for publication
+
+```{r echo=FALSE}
+SILVA_MERDS_rar.divfil_start_precip_soil_g=SILVA_MERDS_rar.divfil_start %>% group_by(soil_root,precip)
+inv_simp_precip_Start=summarise_at(SILVA_MERDS_rar.divfil_start_precip_soil_g, 
+                                   "InvSimpson", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+treatment_order_Start=c("L.B","L.R")
+(Start_inv_simpson_p=ggplot(inv_simp_precip_Start,aes(x=factor(soil_root,levels = treatment_order_Start),fill=factor(soil_root,levels = treatment_order_Start)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(-10,370))+
+    scale_fill_manual(values = c("lightgray", "darkgrey"),labels=c("Bulk","Rhizo"), limits=treatment_order_Start, name=NULL)+
+    scale_x_discrete(labels=c("Bulk","Rhizo"), name=NULL)+ylab("inv Simpson bacteria")+
+    geom_text(aes(y=80, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
 
 ### Transplant Richness
 
@@ -982,16 +1018,15 @@ SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g=SILVA_MERDS_rar.divfil_trt_trans 
 obs_rich_precip_trans=summarise_at(SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g, 
                                    "Observed", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
 treatment_order=c("S.B","L.B","L.R")
-(trans_obs_richness_p2=ggplot(obs_rich_precip_trans,aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
+(trans_obs_richness_p=ggplot(obs_rich_precip_trans,aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
     geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
-    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,1950))+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,2450))+
     scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
     scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Bacterial richness")+
     geom_text(aes(y=80, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
     theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
           legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
 ```
-
 
 ### Presence Richness
 
@@ -1088,10 +1123,10 @@ kable(df_anova_bact_inv_simp_model_trans,align = "c",digits = c(1,2,2,3), captio
 SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g=SILVA_MERDS_rar.divfil_trt_trans %>% group_by(soil_root,precip)
 inv_simp_precip_trans=summarise_at(SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g, 
                                    "InvSimpson", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
-(trans_inv_simpson_p2=ggplot(inv_simp_precip_trans, aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
+(trans_inv_simpson_p=ggplot(inv_simp_precip_trans, aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
     geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
     geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),
-                  position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(-10,220))+
+                  position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(-10,370))+
     scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
     scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("inv Simpson bacteria")+
     geom_text(aes(y=-7, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
@@ -1099,6 +1134,8 @@ inv_simp_precip_trans=summarise_at(SILVA_MERDS_rar.divfil_trt_trans_precip_soil_
           legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
 
 ```
+
+
 
 ### Presence inv Simpson
 
@@ -1196,9 +1233,9 @@ kable(df_anova_bact_obs_rich_model_seed,align = "c",digits = c(1,2,2,3), caption
 SILVA_MERDS_rar.divfil_trt_seed_precip_soil_g=SILVA_MERDS_rar.divfil_trt_seed %>% group_by(soil_root,precip)
 obs_rich_precip_seed=summarise_at(SILVA_MERDS_rar.divfil_trt_seed_precip_soil_g, 
                                   "Observed", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
-(seed_obs_richness_p2=ggplot(obs_rich_precip_seed, aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
+(seed_obs_richness_p=ggplot(obs_rich_precip_seed, aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
     geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
-    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,1950))+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,2450))+
     scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
     scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Bacterial richness")+
     geom_text(aes(y=80, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
@@ -1206,6 +1243,9 @@ obs_rich_precip_seed=summarise_at(SILVA_MERDS_rar.divfil_trt_seed_precip_soil_g,
           axis.title.y = element_text(size = 23), axis.text.y = element_text(size = 23),
           legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
 ```
+
+
+
 
 #### Percent Difference from initial community in Bulk
 ```{r echo=FALSE}
@@ -1324,9 +1364,9 @@ SILVA_MERDS_rar.divfil_trt_seed_precip_soil_g=SILVA_MERDS_rar.divfil_trt_seed %>
 inv_simp_precip_seed=summarise_at(SILVA_MERDS_rar.divfil_trt_seed_precip_soil_g, 
                                   "InvSimpson", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
 
-(seed_inv_simpson_p2=ggplot(inv_simp_precip_seed, aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
+(seed_inv_simpson_p=ggplot(inv_simp_precip_seed, aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
     geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
-    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(-10,220))+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(-10,370))+
     scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
     scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("inv Simpson bacteria")+
     geom_text(aes(y=-7, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
@@ -1334,6 +1374,98 @@ inv_simp_precip_seed=summarise_at(SILVA_MERDS_rar.divfil_trt_seed_precip_soil_g,
           axis.title.y = element_text(size = 23), axis.text.y = element_text(size = 23),
           legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
 ```
+
+
+
+
+##### Combined Graph for publication
+
+```{r echo=FALSE, include=FALSE}
+SILVA_MERDS_rar.divfil_start_precip_soil_g=SILVA_MERDS_rar.divfil_start %>% group_by(soil_root,precip)
+obs_rich_precip_Start=summarise_at(SILVA_MERDS_rar.divfil_start_precip_soil_g, 
+                                   "Observed", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+treatment_order_Start=c("L.B","L.R")
+(Start_obs_richness_p2=ggplot(obs_rich_precip_Start,aes(x=factor(soil_root,levels = treatment_order_Start),fill=factor(soil_root,levels = treatment_order_Start)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,2450))+
+    scale_fill_manual(values = c("lightgray", "darkgrey"),labels=c("Bulk","Rhizo"), limits=treatment_order_Start, name=NULL)+
+    scale_x_discrete(labels=c("Bulk","Rhizo"), name=NULL)+ylab("Bacterial richness")+
+    geom_text(aes(y=80, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title.y = element_text(size = 32),axis.title.x = element_blank(), axis.text.y = element_text(size = 28),axis.text.x = element_blank(),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+inv_simp_precip_Start=summarise_at(SILVA_MERDS_rar.divfil_start_precip_soil_g, 
+                                   "InvSimpson", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+
+(Start_inv_simpson_p2=ggplot(inv_simp_precip_Start,aes(x=factor(soil_root,levels = treatment_order_Start),fill=factor(soil_root,levels = treatment_order_Start)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(-10,370))+
+    scale_fill_manual(values = c("lightgray", "darkgrey"),labels=c("Bulk","Rhizo"), limits=treatment_order_Start, name=NULL)+
+    scale_x_discrete(labels=c("Bulk","Rhizo"), name=NULL)+ylab("inv Simpson bacteria")+
+    geom_text(aes(y=-7, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 32), axis.text = element_text(size = 28),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+
+SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g=SILVA_MERDS_rar.divfil_trt_trans %>% group_by(soil_root,precip)
+obs_rich_precip_trans=summarise_at(SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g, 
+                                   "Observed", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+treatment_order=c("S.B","L.B","L.R")
+(trans_obs_richness_p2=ggplot(obs_rich_precip_trans,aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,2450))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Bacterial richness")+
+    geom_text(aes(y=80, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_blank(), axis.text = element_blank(),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+
+inv_simp_precip_trans=summarise_at(SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g, 
+                                   "InvSimpson", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+(trans_inv_simpson_p2=ggplot(inv_simp_precip_trans, aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),
+                  position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(-10,370))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("inv Simpson bacteria")+
+    geom_text(aes(y=-7, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_blank(), axis.text.x = element_text(size = 28), axis.text.y=element_blank(),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+
+obs_rich_precip_seed=summarise_at(SILVA_MERDS_rar.divfil_trt_seed_precip_soil_g, 
+                                  "Observed", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+(seed_obs_richness_p2=ggplot(obs_rich_precip_seed, aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,2450))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Bacterial richness")+
+    geom_text(aes(y=80, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_blank(),axis.text= element_blank(),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+inv_simp_precip_seed=summarise_at(SILVA_MERDS_rar.divfil_trt_seed_precip_soil_g, 
+                                  "InvSimpson", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+
+(seed_inv_simpson_p2=ggplot(inv_simp_precip_seed, aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(-10,370))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("inv Simpson bacteria")+
+    geom_text(aes(y=-7, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_blank(), axis.text.x = element_text(size = 28), axis.text.y=element_blank(),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+comined_div_rich_start_end=ggarrange(Start_obs_richness_p2,trans_obs_richness_p2,seed_obs_richness_p2,
+          Start_inv_simpson_p2,trans_inv_simpson_p2,seed_inv_simpson_p2,
+          ncol = 3,nrow = 2  ,legend = "none",widths = c(0.45,1,1),align = "hv")
+#ggsave("D:/MERDS_2018/merds/Switchgrass/R_fig/bacterial_diversity_richness_comb_v2.svg",comined_div_rich_start_end,width =25,height = 16,device="svg")
+
+```
+
+
+
 
 ### Presence inv Simpson
 
