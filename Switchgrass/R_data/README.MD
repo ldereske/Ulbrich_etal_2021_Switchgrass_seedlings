@@ -225,3 +225,9 @@ leaf_num = number of leaves
 Notes = notes from oberserver measuring plantings.
 Observer = person who measured and sowed the given pot
 `
+
+### rep_seq_16s_MERDS.fna
+
+`
+representative sequences for the OTUs used in the experiment.
+`
