@@ -1,0 +1,2467 @@
+---
+title: "MERDs Data Analyses"
+author: "Lukas Bell-Dereske"
+date: "8/27/2020"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(MASS)
+library(reshape2)
+library(reshape)
+library(multcomp)
+library(ggplot2)
+library(car)
+library(MASS)
+library(dplyr)
+library(emmeans)
+library(lme4)
+library(ggpubr)
+library(knitr)
+library(lmerTest)
+options(contrasts=c("contr.sum", "contr.poly"))
+"%w/o%" <- function(x,y)!('%in%'(x,y))
+
+```
+
+Import dataset into R from your directory
+Here is my directory
+```{r, include=FALSE}
+
+dataSG_seed_surv <- read.csv("D:/MERDS_2018/merds/Switchgrass/R_data/SG_surv_Seed_germ.csv")
+dataSG_trans_surv <- read.csv("D:/MERDS_2018/merds/Switchgrass/R_data/SG_surv_transplant_replace.csv")
+data_SG_biomass <- read.csv("D:/MERDS_2018/merds/Switchgrass/R_data/SG_TotalBiomass.csv")
+SG_trt <- read.csv("D:/MERDS_2018/merds/Switchgrass/R_data/SG_trt_sheet.csv")
+SG_height_combin<- read.csv("D:/MERDS_2018/merds/Switchgrass/R_data/SG_height_time_combine.csv", header = T)
+SG_potweight_combin<- read.csv("D:/MERDS_2018/merds/Switchgrass/R_data/SG_potweight_time_combine.csv", header = T)
+SG_planting_data<- read.csv("D:/MERDS_2018/merds/Switchgrass/R_data/SG_planting_data.csv", header = T)
+
+SG_roottraits<- read.csv("D:/MERDS_2018/merds/Switchgrass/R_data/SG_roottraits.csv", header = T)
+summary(SG_roottraits)
+
+SG_inorg_N<- read.csv("D:/MERDS_2018/merds/Switchgrass/R_data/SG_NO3NH4_ug_gdrysoil.csv", header = T)
+summary(SG_inorg_N)
+SG_start_inorg_N<-read.csv("D:/MERDS_2018/merds/Switchgrass/R_data/SG_start_NO3NH4_ug_gdrysoil.csv", header = T)
+
+#now we need to merge the data file with the trt file
+
+
+summary(dataSG_seed_surv)
+dataSG_seed_surv[,8:14]=NULL
+summary(dataSG_trans_surv)
+dataSG_trans_surv[,9:14]=NULL
+summary(dataSG_delta_potweight)
+
+
+dataSG_trans_surv_trt=merge(dataSG_trans_surv, SG_trt, by="Plant_Number", all.x = T)
+dataSG_seed_surv_trt=merge(dataSG_seed_surv, SG_trt, by="Plant_Number", all.x = T)
+dataSG_potweight_trt=merge(dataSG_delta_potweight2, SG_trt, by="Plant_Number", all.x = T)
+SG_roottraits_trt=merge(SG_roottraits, SG_trt, by="Plant_Number", all.x = T)
+SG_inorg_N_trt=merge(SG_inorg_N, SG_trt, by="Plant_Number", all.x = T)
+
+summary(dataSG_trans_surv_trt)
+summary(dataSG_seed_surv_trt)
+summary(dataSG_potweight_trt)
+```
+# SEED GERMINATION PORTION OF THE EXPERIEMENT BEGINS
+
+
+### Time to first germination in a given pot 
+
+```{r, include=FALSE}
+dataSG_seed_surv_trt$pot_w_germ=dataSG_seed_surv_trt$num_germinates
+dataSG_seed_surv_trt$pot_w_germ[dataSG_seed_surv_trt$pot_w_germ>0]=1
+summary(dataSG_seed_surv_trt)
+hist(dataSG_seed_surv_trt$pot_w_germ)
+dataSG_seed_surv_trt$soil_root=with(dataSG_seed_surv_trt, interaction(soil_status,root_association))
+dataSG_seed_surv_trt_1=subset(dataSG_seed_surv_trt, pot_w_germ==1)
+nrow(dataSG_seed_surv_trt_1)
+#764
+dataSG_seed_surv_trt_1_pot_g=group_by(dataSG_seed_surv_trt_1, Plant_Number)
+
+dataSG_seed_surv_trt_1_pot_first_germ=summarise_at(dataSG_seed_surv_trt_1_pot_g, "exp_days", min)
+colnames(dataSG_seed_surv_trt_1_pot_first_germ)[2]="t0_germ"
+
+dataSG_seed_1st_germ_trt=merge(dataSG_seed_surv_trt_1_pot_first_germ, SG_trt, by="Plant_Number", all.y = T)
+dataSG_seed_1st_germ_trt$soil_root=with(dataSG_seed_1st_germ_trt, interaction(soil_status,root_association))
+dataSG_seed_1st_germ_trt=subset(dataSG_seed_1st_germ_trt, life_stage=="S")
+nrow(dataSG_seed_1st_germ_trt)
+summary(dataSG_seed_1st_germ_trt)
+```
+
+### Full Statistical model 
+Diagnostic Graphs
+```{r}
+day_t0_germ_model= lmer((t0_germ)^-1~precip*soil_root+(1|block), data= dataSG_seed_1st_germ_trt)
+qqPlot(resid(day_t0_germ_model))
+hist(resid(day_t0_germ_model))
+shapiro.test(resid(day_t0_germ_model))
+```
+Raw Statistical output
+```{r}
+anova(day_t0_germ_model)
+emmeans(day_t0_germ_model, pairwise~soil_root)
+emmeans(day_t0_germ_model, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_day_t0_germ_model=anova(day_t0_germ_model)
+df_anova_day_t0_germ_model=data.frame(row.names =row.names(anova_day_t0_germ_model),"Df"=anova_day_t0_germ_model$NumDF,"Resid Df"=anova_day_t0_germ_model$DenDF,"F-value"=anova_day_t0_germ_model$`F value`,"P-value"=anova_day_t0_germ_model$`Pr(>F)`)
+kable(df_anova_day_t0_germ_model,align = "c",digits = c(1,2,2,3), caption= "Days to germination")
+```
+
+Graph for publication
+```{r echo=FALSE}
+dataSG_seed_1st_germ_trt_na=subset(dataSG_seed_1st_germ_trt, !is.na(t0_germ))
+dataSG_seed_1st_germ_trt_precip_soil_g=dataSG_seed_1st_germ_trt_na %>% group_by(soil_root,precip)
+day_t0_soil_root_precip=summarise_at(dataSG_seed_1st_germ_trt_precip_soil_g, 
+                                   "t0_germ", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+treatment_order=c("S.B","L.B","L.R")
+(rate_germination_seedling_p=ggplot(day_t0_soil_root_precip, aes(x=precip,y=mean, ymin = mean-se, ymax= mean+se,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+    geom_errorbar(position=position_dodge(width=0.9), width=0.2, size=1)+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Days to first germination")+
+    geom_text(aes(y=1, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+scale_y_continuous(limits = c(0,15), breaks = c(3,6,9,12,15))+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none", panel.grid.major = element_blank(),panel.grid.minor = element_blank()))
+#9X8
+#800x750
+```
+
+## Presence Days to first Germination
+
+Diagnostic Graphs
+```{r}
+dataSG_seed_1st_germ_pres=subset(dataSG_seed_1st_germ_trt, root_association =="B")
+unique(dataSG_seed_1st_germ_pres$soil_root)
+nrow(dataSG_seed_1st_germ_pres)
+
+day_t0_germ_model_pres= lmer((t0_germ)^-1~precip*soil_root+(1|block), data= dataSG_seed_1st_germ_pres)
+qqPlot(resid(day_t0_germ_model_pres))
+hist(resid(day_t0_germ_model_pres))
+shapiro.test(resid(day_t0_germ_model_pres))
+
+```
+
+Raw Statistical output
+
+```{r}
+anova(day_t0_germ_model_pres)
+emmeans(day_t0_germ_model_pres, pairwise~soil_root)
+emmeans(day_t0_germ_model_pres, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_day_t0_germ_model_pres=anova(day_t0_germ_model_pres)
+df_anova_day_t0_germ_model_pres=data.frame(row.names =row.names(anova_day_t0_germ_model_pres),"Df"=anova_day_t0_germ_model_pres$NumDF,"Resid Df"=anova_day_t0_germ_model_pres$DenDF,"F-value"=anova_day_t0_germ_model_pres$`F value`,"P-value"=anova_day_t0_germ_model_pres$`Pr(>F)`)
+kable(df_anova_day_t0_germ_model_pres,align = "c",digits = c(1,2,2,3), caption= "Days to germination")
+```
+
+## Origin Days to first Germination
+
+Diagnostic Graphs
+```{r}
+dataSG_seed_1st_germ_orig=subset(dataSG_seed_1st_germ_trt, soil_status =="L")
+unique(dataSG_seed_1st_germ_orig$soil_root)
+nrow(dataSG_seed_1st_germ_orig)
+#60
+
+
+day_t0_germ_model_orig= lmer((t0_germ)^-2~precip*soil_root+(1|block), data= dataSG_seed_1st_germ_orig)
+qqPlot(resid(day_t0_germ_model_orig))
+hist(resid(day_t0_germ_model_orig))
+shapiro.test(resid(day_t0_germ_model_orig))
+#0.01286
+
+```
+Raw Statistical output
+```{r}
+anova(day_t0_germ_model_orig)
+
+#emmeans(day_t0_germ_model_orig, pairwise~soil_root)
+#emmeans(day_t0_germ_model_orig, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_day_t0_germ_model_orig=anova(day_t0_germ_model_orig)
+df_anova_day_t0_germ_model_orig=data.frame(row.names =row.names(anova_day_t0_germ_model_orig),"Df"=anova_day_t0_germ_model_orig$NumDF,"Resid Df"=anova_day_t0_germ_model_orig$DenDF,"F-value"=anova_day_t0_germ_model_orig$`F value`,"P-value"=anova_day_t0_germ_model_orig$`Pr(>F)`)
+kable(df_anova_day_t0_germ_model_orig,align = "c",digits = c(1,2,2,3), caption= "Days to germination")
+```
+
+
+## Final number of germinates
+
+
+```{r include=FALSE}
+#harvested transplants plus final survival
+
+dataSG_seed_surv_trt_g=group_by(dataSG_seed_surv_trt, Plant_Number)
+total_transs_harvested=summarise_at(dataSG_seed_surv_trt_g, "num_removed", sum)
+colnames(total_transs_harvested)[2]="tot_num_removed"
+
+
+
+
+
+fin_dataSG_seed_surv_trt=subset(dataSG_seed_surv_trt, date=="7_09")
+
+fin_dataSG_seed_surv_trt$tot_num_germ_harvest=fin_dataSG_seed_surv_trt$num_germinates+total_transs_harvested$tot_num_removed
+#this gives the number of plants that may have survived to the end of the experiment but there were some seedlings 
+#that died before the experiment ended and were not harvested
+
+#let's make a germinated seeds value
+fin_dataSG_seed_surv_trt=merge(fin_dataSG_seed_surv_trt, dataSG_seed_1st_germ_trt[,c("t0_germ","Plant_Number")], by="Plant_Number", all.y = T)
+
+
+fin_dataSG_seed_surv_trt$germinated=fin_dataSG_seed_surv_trt$t0_germ
+fin_dataSG_seed_surv_trt$germinated[fin_dataSG_seed_surv_trt$germinated>0]=1
+fin_dataSG_seed_surv_trt$germinated[is.na(fin_dataSG_seed_surv_trt$germinated)]=0
+fin_dataSG_seed_surv_trt$soil_root=with(fin_dataSG_seed_surv_trt, interaction(soil_status,root_association))
+
+
+
+fin_dataSG_seed_surv_trt %>% group_by(soil_root, precip)  %>% summarise_at("germinated", ~sum(.))
+
+#I am going to make a column with the total number of seedlings (estimated since we did not mark seedlings
+#as they germinated) based off if the "germinated" and "tot_num_germ_harvest"
+
+
+fin_dataSG_seed_surv_trt_sub1=subset(fin_dataSG_seed_surv_trt, germinated>0&tot_num_germ_harvest==0)
+nrow(fin_dataSG_seed_surv_trt_sub1)
+#12
+fin_dataSG_seed_surv_trt_sub1$tot_num_germ=rep(1)
+fin_dataSG_seed_surv_trt_sub2=subset(fin_dataSG_seed_surv_trt, germinated==0&tot_num_germ_harvest==0)
+nrow(fin_dataSG_seed_surv_trt_sub2)
+#31
+fin_dataSG_seed_surv_trt_sub2$tot_num_germ=rep(0)
+fin_dataSG_seed_surv_trt_sub3=subset(fin_dataSG_seed_surv_trt, germinated==1&tot_num_germ_harvest>0)
+nrow(fin_dataSG_seed_surv_trt_sub3)
+#47
+fin_dataSG_seed_surv_trt_sub3$tot_num_germ=fin_dataSG_seed_surv_trt_sub3$tot_num_germ_harvest
+fin_dataSG_seed_surv_trt_tot_seedling=rbind(fin_dataSG_seed_surv_trt_sub1,fin_dataSG_seed_surv_trt_sub2,fin_dataSG_seed_surv_trt_sub3)
+nrow(fin_dataSG_seed_surv_trt_tot_seedling)
+summary(fin_dataSG_seed_surv_trt_tot_seedling)
+
+write.csv(fin_dataSG_seed_surv_trt_tot_seedling, "D:/MERDS_2018/merds/Switchgrass/R_data/fin_dataSG_seed_surv_trt_tot_seedling.csv")
+
+
+summary(fin_dataSG_seed_surv_trt)
+
+
+hist(fin_dataSG_seed_surv_trt$tot_num_germ)
+```
+
+Diagnostic Graphs
+
+```{r}
+#Total germination
+#convert to percentages
+fin_dataSG_seed_surv_trt_tot_seedling$prop_tot_num_germ=fin_dataSG_seed_surv_trt_tot_seedling$tot_num_germ/10
+seed_germ_model= glmer.nb((tot_num_germ)~precip*soil_root+(1|block), data= fin_dataSG_seed_surv_trt_tot_seedling)
+qqPlot(resid(seed_germ_model))
+hist(resid(seed_germ_model))
+shapiro.test(resid(seed_germ_model))
+#p-value = 0.0001422
+plot(seed_germ_model)
+
+#Chad's code for checking for over dispersion
+overdisp_fun <- function(model) {
+  vpars <- function(m) {
+    nrow(m)*(nrow(m)+1)/2
+  }
+  model.df <- sum(sapply(VarCorr(model),vpars))+length(fixef(model))
+  rdf <- nrow(model.frame(model))-model.df
+  rp <- residuals(model,type="pearson")
+  Pearson.chisq <- sum(rp^2)
+  prat <- Pearson.chisq/rdf
+  pval <- pchisq(Pearson.chisq, df=rdf, lower.tail=FALSE)
+  c(chisq=Pearson.chisq,ratio=prat,rdf=rdf,p=pval)
+}
+
+overdisp_fun(seed_germ_model)
+
+
+```
+Raw Statistical output
+```{r}
+summary(seed_germ_model)
+Anova(seed_germ_model,type = 3)
+emmeans(seed_germ_model,pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_seed_germ_model=Anova(seed_germ_model,type = 3)
+df_Anova_seed_germ_model=data.frame(row.names =row.names(Anova_seed_germ_model),"Df"=Anova_seed_germ_model$Df,"Chi-Sq"=Anova_seed_germ_model$Chisq,"P-value"=Anova_seed_germ_model$`Pr(>Chisq)`)
+kable(df_Anova_seed_germ_model,align = "c",digits = c(2,2,3), caption= "Number of seeds that germinated")
+```
+
+
+
+## Presence Number of Seeds that Geminated 
+
+Diagnostic Graphs
+```{r}
+fin_dataSG_seed_surv_trt_tot_seedling_pres=subset(fin_dataSG_seed_surv_trt_tot_seedling, root_association =="B")
+seed_germ_model_pres= glmer.nb((tot_num_germ)~precip*soil_root+(1|block), data= fin_dataSG_seed_surv_trt_tot_seedling_pres)
+qqPlot(resid(seed_germ_model_pres))
+hist(resid(seed_germ_model_pres))
+shapiro.test(resid(seed_germ_model_pres))
+#p-value = 0.0007916
+plot(seed_germ_model_pres)
+```
+Raw Statistical output
+```{r}
+summary(seed_germ_model_pres)
+Anova(seed_germ_model_pres,type = 3)
+emmeans(seed_germ_model_pres,pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_seed_germ_model_pres=Anova(seed_germ_model_pres,type = 3)
+df_Anova_seed_germ_model_pres=data.frame(row.names = rownames(Anova_seed_germ_model_pres),"Df"=Anova_seed_germ_model_pres$Df,"Chi-Sq"=Anova_seed_germ_model_pres$Chisq,"P-value"=Anova_seed_germ_model_pres$`Pr(>Chisq)`)
+kable(df_Anova_seed_germ_model_pres,align = "c",digits = c(2,2,3), caption= "Number of seeds that germinated")
+```
+
+## Origin Number of Seeds that Geminated 
+
+Diagnostic Graphs
+```{r}
+fin_dataSG_seed_surv_trt_tot_seedling_org=subset(fin_dataSG_seed_surv_trt_tot_seedling, soil_status =="L")
+
+seed_germ_model_org= glmer.nb((tot_num_germ)~precip*soil_root+(1|block), data= fin_dataSG_seed_surv_trt_tot_seedling_org)
+qqPlot(resid(seed_germ_model_org))
+hist(resid(seed_germ_model_org))
+shapiro.test(resid(seed_germ_model_org))
+#p-value = 0.02477
+plot(seed_germ_model_org)
+```
+Raw Statistical output
+```{r}
+summary(seed_germ_model_org)
+Anova(seed_germ_model_org,type = 3)
+emmeans(seed_germ_model_org,pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_seed_germ_model_org=Anova(seed_germ_model_org,type = 3)
+
+df_Anova_seed_germ_model_org=data.frame(row.names =row.names(Anova_seed_germ_model_org),"Df"=Anova_seed_germ_model_org$Df,"Chi-Sq"=Anova_seed_germ_model_org$Chisq,"P-value"=Anova_seed_germ_model_org$`Pr(>Chisq)`)
+kable(df_Anova_seed_germ_model_org,align = "c",digits = c(2,2,2,3), caption= "Number of seeds that germinated")
+```
+
+
+Graph for publication
+```{r echo=FALSE}
+
+germ_soil_root_precip=fin_dataSG_seed_surv_trt_tot_seedling %>% group_by(soil_root,precip)%>% summarise_at("tot_num_germ", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+
+(pot_germination_rate_p=ggplot(germ_soil_root_precip, aes(x=precip,y=mean,fill=factor(soil_root,levels = treatment_order), ymin = mean-se, ymax= mean+se))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+    geom_errorbar(position=position_dodge(width=0.9), width=0.2, size=1)+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Germination per pot\n(# of germinants)")+
+    geom_text(aes(y=.2, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+#9X8
+#800x750
+#ggsave("D:/MERDS_2018/merds/Switchgrass/R_fig/total_germ_bar.svg",pot_germination_rate_p,width =9,height = 8,device="svg")
+```
+
+#### Percent Difference live v sterile in Ambient
+```{r echo=FALSE}
+
+germ_soil_root_precip=fin_dataSG_seed_surv_trt_tot_seedling %>% group_by(soil_root,precip)%>% summarise_at("tot_num_germ", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+
+
+((germ_soil_root_precip[germ_soil_root_precip$precip=="A"&germ_soil_root_precip$soil_root=="L.B",]$mean-germ_soil_root_precip[germ_soil_root_precip$precip=="A"&germ_soil_root_precip$soil_root=="S.B",]$mean)/germ_soil_root_precip[germ_soil_root_precip$precip=="A"&germ_soil_root_precip$soil_root=="S.B",]$mean)*100
+
+```
+
+#### Percent Difference Drought v Ambient
+```{r echo=FALSE}
+
+germ_soil_precip=fin_dataSG_seed_surv_trt_tot_seedling %>% group_by(precip) %>% summarise_at("tot_num_germ", list(~n(),~mean(.),sd,se=~sd(.)/sqrt(n())))
+
+((germ_soil_precip[germ_soil_precip$precip=="D",]$mean-germ_soil_precip[germ_soil_precip$precip=="A",]$mean)/germ_soil_precip[germ_soil_precip$precip=="A",]$mean)*100
+
+```
+
+## Cummulative germination and survival
+
+
+```{r include=FALSE}
+
+data_SG_biomass_seed_surv_trt=merge(fin_dataSG_seed_surv_trt, data_SG_biomass, by="Plant_Number", all.x = T)
+summary(data_SG_biomass_seed_surv_trt)
+data_SG_biomass_seed_surv_trt$final_plant_no=data_SG_biomass_seed_surv_trt$total_biomass
+data_SG_biomass_seed_surv_trt$final_plant_no[is.na(data_SG_biomass_seed_surv_trt$final_plant_no)]=0
+data_SG_biomass_seed_surv_trt$final_plant_no[data_SG_biomass_seed_surv_trt$final_plant_no>0]=1
+hist(data_SG_biomass_seed_surv_trt$final_plant_no)
+
+```
+
+### Full Statistical model 
+Diagnostic Graphs
+```{r}
+seed_final_plant_no_model= glmer(final_plant_no~precip*soil_root+(1|block), data= data_SG_biomass_seed_surv_trt, family="binomial")
+qqPlot(resid(seed_final_plant_no_model))
+hist(resid(seed_final_plant_no_model))
+shapiro.test(resid(seed_final_plant_no_model))
+#7.527e-05
+plot(seed_final_plant_no_model)
+
+```
+
+
+Raw Statistical output
+```{r}
+Anova(seed_final_plant_no_model)
+emmeans(seed_final_plant_no_model, pairwise~soil_root)
+emmeans(seed_final_plant_no_model, pairwise~soil_root|precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_seed_final_plant_no_model=Anova(seed_final_plant_no_model,type = 3)
+df_Anova_seed_final_plant_no_model=data.frame(row.names =row.names(Anova_seed_final_plant_no_model),"Df"=Anova_seed_final_plant_no_model$Df,"Chi-Sq"=Anova_seed_final_plant_no_model$Chisq,"P-value"=Anova_seed_final_plant_no_model$`Pr(>Chisq)`)
+kable(df_Anova_seed_final_plant_no_model,align = "c",digits = c(2,2,3), caption= "Seedling pots")
+```
+Graph for publication
+```{r echo=FALSE}
+data_SG_biomass_seed_surv_trt_g=data_SG_biomass_seed_surv_trt %>% group_by(soil_root,precip)
+seed_final_seedling_soil_root_precip=summarise_at(data_SG_biomass_seed_surv_trt_g, 
+                                   "final_plant_no", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+
+seed_final_seedling_soil_root_precip$mean_per=seed_final_seedling_soil_root_precip$mean*100
+(seedling_plant_num_p2=ggplot(seed_final_seedling_soil_root_precip, aes(x=precip,y=mean_per,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("% pots with a germinant")+
+    scale_y_continuous(limits = c(0,120), breaks = c(0,20,40,60,80,100))+
+    geom_text(aes(y=7, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+#9X8
+#800x750
+#ggsave("D:/MERDS_2018/merds/Switchgrass/R_fig/total_final_germ.svg",seedling_plant_num_p2,width =9,height = 8,device="svg")
+#ggsave("D:/MERDS_2018/merds/Switchgrass/R_fig/total_final_germ.png",seedling_plant_num_p2,width =9,height = 8,device="png")
+```
+
+
+### Presence Cummulative germination and survival
+Diagnostic Graphs
+```{r}
+data_SG_biomass_seed_surv_trt_pres=subset(data_SG_biomass_seed_surv_trt, root_association =="B")
+seed_final_plant_no_model_pres= glmer(final_plant_no~precip*soil_root+(1|block), data= data_SG_biomass_seed_surv_trt_pres, family="binomial")
+qqPlot(resid(seed_final_plant_no_model_pres))
+hist(resid(seed_final_plant_no_model_pres))
+shapiro.test(resid(seed_final_plant_no_model_pres))
+#0.0002155
+plot(seed_final_plant_no_model_pres)
+
+```
+
+
+Raw Statistical output
+```{r}
+Anova(seed_final_plant_no_model_pres, type=3)
+
+emmeans(seed_final_plant_no_model_pres, pairwise~soil_root)
+emmeans(seed_final_plant_no_model_pres, pairwise~soil_root|precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_seed_final_plant_no_model_pres=Anova(seed_final_plant_no_model_pres,type = 3)
+df_Anova_seed_final_plant_no_model_pres=data.frame(row.names =row.names(Anova_seed_final_plant_no_model_pres),"Df"=Anova_seed_final_plant_no_model_pres$Df,"Chi-Sq"=Anova_seed_final_plant_no_model_pres$Chisq,"P-value"=Anova_seed_final_plant_no_model_pres$`Pr(>Chisq)`)
+kable(df_Anova_seed_final_plant_no_model_pres,align = "c",digits = c(2,2,3), caption= "Presence Seedling pots")
+```
+
+### Origin Cummulative germination and survival
+Diagnostic Graphs
+```{r}
+data_SG_biomass_seed_surv_trt_orig=subset(data_SG_biomass_seed_surv_trt, soil_status =="L")
+seed_final_plant_no_model_orig= glmer(final_plant_no~precip*soil_root+(1|block), data= data_SG_biomass_seed_surv_trt_orig, family="binomial")
+qqPlot(resid(seed_final_plant_no_model_orig))
+hist(resid(seed_final_plant_no_model_orig))
+shapiro.test(resid(seed_final_plant_no_model_orig))
+#7.245e-07
+plot(seed_final_plant_no_model_orig)
+
+```
+
+
+Raw Statistical output
+```{r}
+Anova(seed_final_plant_no_model_orig, type=3)
+
+emmeans(seed_final_plant_no_model_orig, pairwise~soil_root)
+emmeans(seed_final_plant_no_model_orig, pairwise~soil_root|precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_seed_final_plant_no_model_orig=Anova(seed_final_plant_no_model_orig,type = 3)
+df_Anova_seed_final_plant_no_model_orig=data.frame(row.names =row.names(Anova_seed_final_plant_no_model_orig),"Df"=Anova_seed_final_plant_no_model_orig$Df,"Chi-Sq"=Anova_seed_final_plant_no_model_orig$Chisq,"P-value"=Anova_seed_final_plant_no_model_orig$`Pr(>Chisq)`)
+kable(df_Anova_seed_final_plant_no_model_orig,align = "c",digits = c(2,2,3), caption= "Origin Seedling pots")
+```
+
+
+
+
+## Survival given germination
+
+
+```{r include=FALSE}
+
+data_SG_biomass_seed_surv_trt=merge(fin_dataSG_seed_surv_trt, data_SG_biomass, by="Plant_Number", all.x = T)
+
+#Survival given germination
+fin_dataSG_seed_surv_trt
+fin_dataSG_biomass_seed_surv_trt_w_germ=subset(data_SG_biomass_seed_surv_trt, germinated>0)
+summary(fin_dataSG_biomass_seed_surv_trt_w_germ)
+
+
+
+fin_dataSG_biomass_seed_surv_trt_w_germ$surv_germ=fin_dataSG_biomass_seed_surv_trt_w_germ$total_biomass
+fin_dataSG_biomass_seed_surv_trt_w_germ$surv_germ[is.na(fin_dataSG_biomass_seed_surv_trt_w_germ$total_biomass)]=0
+fin_dataSG_biomass_seed_surv_trt_w_germ$surv_germ[fin_dataSG_biomass_seed_surv_trt_w_germ$total_biomass>0]=1
+hist(fin_dataSG_biomass_seed_surv_trt_w_germ$surv_germ)
+```
+
+
+
+### Full Statistical model 
+Diagnostic Graphs
+```{r}
+seed_surv_germ_model= glmer(surv_germ~precip*soil_root+(1|block), data= fin_dataSG_biomass_seed_surv_trt_w_germ, family="binomial")
+qqPlot(resid(seed_surv_germ_model))
+hist(resid(seed_surv_germ_model))
+shapiro.test(resid(seed_surv_germ_model))
+#1.174e-07
+plot(seed_surv_germ_model)
+
+```
+
+
+Raw Statistical output
+```{r}
+Anova(seed_surv_germ_model, type=3)
+#soil_root          9.8880  2   0.007126 **
+#soil_root        7.0596  2    0.02931 *
+#precip:soil_root   4.3070  2   0.116077 
+emmeans(seed_surv_germ_model, pairwise~soil_root)
+emmeans(seed_surv_germ_model, pairwise~soil_root|precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_seed_surv_germ_model=Anova(seed_surv_germ_model,type = 3)
+df_Anova_seed_surv_germ_model=data.frame(row.names =row.names(Anova_seed_surv_germ_model),"Df"=Anova_seed_surv_germ_model$Df,"Chi-Sq"=Anova_seed_surv_germ_model$Chisq,"P-value"=Anova_seed_surv_germ_model$`Pr(>Chisq)`)
+kable(df_Anova_seed_surv_germ_model,align = "c",digits = c(2,2,3), caption= "Survival given germination")
+```
+Graph for publication
+```{r echo=FALSE}
+fin_dataSG_biomass_seed_surv_trt_w_germ_g=fin_dataSG_biomass_seed_surv_trt_w_germ %>% group_by(soil_root,precip)
+seed_surv_soil_root_precip=summarise_at(fin_dataSG_biomass_seed_surv_trt_w_germ_g, 
+                                   "surv_germ", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+
+seed_surv_soil_root_precip$mean_per=seed_surv_soil_root_precip$mean*100
+(seedling_suv_p2=ggplot(seed_surv_soil_root_precip, aes(x=precip,y=mean_per,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("% germinant survival \ngiven gemination")+
+    scale_y_continuous(limits = c(0,120), breaks = c(0,20,40,60,80,100))+
+    geom_text(aes(y=7, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+#### Percent Difference live v sterile in Drought
+```{r echo=FALSE}
+
+fin_dataSG_biomass_seed_surv_trt_w_germ_g=fin_dataSG_biomass_seed_surv_trt_w_germ %>% group_by(soil_root,precip)
+seed_surv_soil_root_precip=summarise_at(fin_dataSG_biomass_seed_surv_trt_w_germ_g, 
+                                   "surv_germ", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+
+
+((seed_surv_soil_root_precip[seed_surv_soil_root_precip$precip=="D"&seed_surv_soil_root_precip$soil_root=="L.B",]$mean-seed_surv_soil_root_precip[seed_surv_soil_root_precip$precip=="D"&seed_surv_soil_root_precip$soil_root=="S.B",]$mean)/seed_surv_soil_root_precip[seed_surv_soil_root_precip$precip=="D"&seed_surv_soil_root_precip$soil_root=="S.B",]$mean)*100
+
+```
+
+#### Percent Difference live v sterile in Ambient
+```{r echo=FALSE}
+
+fin_dataSG_biomass_seed_surv_trt_w_germ_g=fin_dataSG_biomass_seed_surv_trt_w_germ %>% group_by(soil_root,precip)
+seed_surv_soil_root_precip=summarise_at(fin_dataSG_biomass_seed_surv_trt_w_germ_g, 
+                                   "surv_germ", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+
+
+((seed_surv_soil_root_precip[seed_surv_soil_root_precip$precip=="A"&seed_surv_soil_root_precip$soil_root=="L.B",]$mean-seed_surv_soil_root_precip[seed_surv_soil_root_precip$precip=="A"&seed_surv_soil_root_precip$soil_root=="S.B",]$mean)/seed_surv_soil_root_precip[seed_surv_soil_root_precip$precip=="A"&seed_surv_soil_root_precip$soil_root=="S.B",]$mean)*100
+
+```
+
+### Presence survival given germination
+Diagnostic Graphs
+```{r}
+fin_dataSG_biomass_seed_surv_pres_w_germ=subset(fin_dataSG_biomass_seed_surv_trt_w_germ, root_association =="B")
+seed_surv_germ_model_pres= glmer(surv_germ~precip*soil_root+(1|block), data= fin_dataSG_biomass_seed_surv_pres_w_germ, family="binomial")
+qqPlot(resid(seed_surv_germ_model_pres))
+hist(resid(seed_surv_germ_model_pres))
+shapiro.test(resid(seed_surv_germ_model_pres))
+#3.305e-05
+plot(seed_surv_germ_model_pres)
+
+```
+
+
+Raw Statistical output
+```{r}
+Anova(seed_surv_germ_model_pres, type=3)
+
+emmeans(seed_surv_germ_model_pres, pairwise~soil_root)
+emmeans(seed_surv_germ_model_pres, pairwise~soil_root|precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_seed_surv_germ_model_pres=Anova(seed_surv_germ_model_pres,type = 3)
+df_Anova_seed_surv_germ_model_pres=data.frame(row.names =row.names(Anova_seed_surv_germ_model_pres),"Df"=Anova_seed_surv_germ_model_pres$Df,"Chi-Sq"=Anova_seed_surv_germ_model_pres$Chisq,"P-value"=Anova_seed_surv_germ_model_pres$`Pr(>Chisq)`)
+kable(df_Anova_seed_surv_germ_model_pres,align = "c",digits = c(2,2,3), caption= "Survival given germination")
+```
+
+### Origin survival given germination
+Diagnostic Graphs
+```{r}
+fin_dataSG_biomass_seed_surv_orig_w_germ=subset(fin_dataSG_biomass_seed_surv_trt_w_germ, soil_status =="L")
+seed_surv_germ_model_orig= glmer(surv_germ~precip*soil_root+(1|block), data= fin_dataSG_biomass_seed_surv_orig_w_germ, family="binomial")
+qqPlot(resid(seed_surv_germ_model_orig))
+hist(resid(seed_surv_germ_model_orig))
+shapiro.test(resid(seed_surv_germ_model_orig))
+#1.23e-10
+plot(seed_surv_germ_model_orig)
+
+```
+
+
+Raw Statistical output
+```{r}
+Anova(seed_surv_germ_model_orig, type=3)
+
+emmeans(seed_surv_germ_model_orig, pairwise~soil_root)
+emmeans(seed_surv_germ_model_orig, pairwise~soil_root|precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_seed_surv_germ_model_orig=Anova(seed_surv_germ_model_orig,type = 3)
+df_Anova_seed_surv_germ_model_orig=data.frame(row.names =row.names(Anova_seed_surv_germ_model_orig),"Df"=Anova_seed_surv_germ_model_orig$Df,"Chi-Sq"=Anova_seed_surv_germ_model_orig$Chisq,"P-value"=Anova_seed_surv_germ_model_orig$`Pr(>Chisq)`)
+kable(df_Anova_seed_surv_germ_model_orig,align = "c",digits = c(2,2,3), caption= "Survival given germination")
+```
+
+## Biomass given germination
+
+
+```{r include=FALSE}
+fin_dataSG_biomass_seed_surv_trt_w_germ=subset(fin_dataSG_biomass_seed_surv_trt_w_germ, germinated>0)
+fin_dataSG_biomass_seed_surv_trt_given_germ=subset(fin_dataSG_biomass_seed_surv_trt_w_germ, !is.na(total_biomass))
+nrow(fin_dataSG_biomass_seed_surv_trt_given_germ)
+#45
+summary(fin_dataSG_biomass_seed_surv_trt_given_germ)
+fin_dataSG_biomass_seed_surv_trt_given_germ%>%group_by(precip,soil_root)%>%summarise_at("total_biomass",~n())
+
+```
+
+Diagnostic Graphs
+```{r}
+seed_biomas_model= lmer(log(total_biomass)~precip*soil_root+(1|block), data= fin_dataSG_biomass_seed_surv_trt_given_germ)
+qqPlot(resid(seed_biomas_model))
+hist(resid(seed_biomas_model))
+shapiro.test(resid(seed_biomas_model))
+#p-value = 0.457
+```
+
+Raw Statistical output
+```{r}
+anova(seed_biomas_model)
+
+emmeans(seed_biomas_model, pairwise~soil_root)
+emmeans(seed_biomas_model, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_seed_biomas_model=anova(seed_biomas_model)
+df_anova_seed_biomas_model=data.frame(row.names = row.names(anova_seed_biomas_model),"Df"=anova_seed_biomas_model$NumDF,"Resid Df"=anova_seed_biomas_model$DenDF,"F-value"=anova_seed_biomas_model$`F value`,"P-value"=anova_seed_biomas_model$`Pr(>F)`)
+kable(df_anova_seed_biomas_model,align = "c",digits = c(1,2,2,3), caption= "Total biomass given germination")
+```
+Graph for publication
+```{r echo=FALSE}
+fin_dataSG_biomass_seed_surv_trt_given_germ_soil_root_precip_g=fin_dataSG_biomass_seed_surv_trt_given_germ %>% group_by(soil_root,precip)
+total_bio_soil_root_precip=summarise_at(fin_dataSG_biomass_seed_surv_trt_given_germ_soil_root_precip_g, 
+                                       "total_biomass", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+(seed_biomass_p2=ggplot(total_bio_soil_root_precip, aes(x=precip,y=mean, ymin = mean-se, ymax= mean+se,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+    geom_errorbar(position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,.95))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Biomass \ngiven gemination (g)")+
+    geom_text(aes(y=mean+se+0.05, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+
+### Presence total biomass of germinate
+
+
+Diagnostic Graphs
+```{r}
+fin_dataSG_biomass_seed_surv_pres_w_germ=subset(fin_dataSG_biomass_seed_surv_trt_given_germ, root_association =="B")
+nrow(fin_dataSG_biomass_seed_surv_pres_w_germ)
+#26
+unique(fin_dataSG_biomass_seed_surv_pres_w_germ$soil_root)
+
+seed_biomas_model_pres= lmer((total_biomass)~precip*soil_root+(1|block), data= fin_dataSG_biomass_seed_surv_pres_w_germ)
+qqPlot(resid(seed_biomas_model_pres))
+hist(resid(seed_biomas_model_pres))
+
+shapiro.test(resid(seed_biomas_model_pres))
+#p-value = 0.1224
+```
+
+Raw Statistical output
+```{r}
+anova(seed_biomas_model_pres)
+
+emmeans(seed_biomas_model_pres, pairwise~soil_root)
+emmeans(seed_biomas_model_pres, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_seed_biomas_model_pres=anova(seed_biomas_model_pres)
+df_anova_seed_biomas_model_pres=data.frame(row.names = row.names(anova_seed_biomas_model_pres),"Df"=anova_seed_biomas_model_pres$NumDF,"Resid Df"=anova_seed_biomas_model_pres$DenDF,"F-value"=anova_seed_biomas_model_pres$`F value`,"P-value"=anova_seed_biomas_model_pres$`Pr(>F)`)
+kable(df_anova_seed_biomas_model_pres,align = "c",digits = c(1,2,2,3), caption= "Total biomass given germination")
+
+```
+### Origin total biomass of germinated
+
+
+Diagnostic Graphs
+```{r}
+fin_dataSG_biomass_seed_surv_orig_w_germ=subset(fin_dataSG_biomass_seed_surv_trt_given_germ, soil_status =="L")
+nrow(fin_dataSG_biomass_seed_surv_orig_w_germ)
+#38
+unique(fin_dataSG_biomass_seed_surv_orig_w_germ$soil_root)
+
+seed_biomas_model_orig= lmer(log(total_biomass)~precip*soil_root+(1|block), data= fin_dataSG_biomass_seed_surv_orig_w_germ)
+qqPlot(resid(seed_biomas_model_orig))
+hist(resid(seed_biomas_model_orig))
+
+shapiro.test(resid(seed_biomas_model_orig))
+#p-value = 0.5891
+```
+
+Raw Statistical output
+```{r}
+anova(seed_biomas_model_orig)
+
+emmeans(seed_biomas_model_orig, pairwise~soil_root)
+emmeans(seed_biomas_model_orig, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_seed_biomas_model_orig=anova(seed_biomas_model_orig)
+df_anova_seed_biomas_model_orig=data.frame(row.names = row.names(anova_seed_biomas_model_orig),"Df"=anova_seed_biomas_model_orig$NumDF,"Resid Df"=anova_seed_biomas_model_orig$DenDF,"F-value"=anova_seed_biomas_model_orig$`F value`,"P-value"=anova_seed_biomas_model_orig$`Pr(>F)`)
+kable(df_anova_seed_biomas_model_orig,align = "c",digits = c(1,2,2,3), caption= "Total biomass given germination")
+```
+
+####Total final biomass across plots 
+```{r echo=FALSE, results='asis'}
+kable(fin_dataSG_biomass_seed_surv_trt_given_germ%>%group_by(precip,soil_root)%>%summarise_at("total_biomass",~sum(.)))
+```
+
+### Root:shoot ratio given germination
+Diagnostic Graphs
+```{r}
+#now root:shoot ratio
+fin_dataSG_biomass_seed_surv_trt_given_germ$root_shoot=fin_dataSG_biomass_seed_surv_trt_given_germ$root_weight_g/fin_dataSG_biomass_seed_surv_trt_given_germ$shoot_weight_g
+
+root_shoot_seed_model= lmer(log(root_shoot)~precip*soil_root+(1|block), data= fin_dataSG_biomass_seed_surv_trt_given_germ)
+qqPlot(resid(root_shoot_seed_model))
+hist(resid(root_shoot_seed_model))
+shapiro.test(resid(root_shoot_seed_model))
+#0.2972
+```
+Raw Statistical output
+```{r}
+anova(root_shoot_seed_model, type=3)
+emmeans(root_shoot_seed_model, pairwise~soil_root)
+emmeans(root_shoot_seed_model, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_root_shoot_seed_model=anova(root_shoot_seed_model)
+df_anova_root_shoot_seed_model=data.frame(row.names = row.names(anova_root_shoot_seed_model),"Df"=anova_root_shoot_seed_model$NumDF,"Resid Df"=anova_root_shoot_seed_model$DenDF,"F-value"=anova_root_shoot_seed_model$`F value`,"P-value"=anova_root_shoot_seed_model$`Pr(>F)`)
+kable(df_anova_root_shoot_seed_model,align = "c",digits = c(1,2,2,3), caption= "Days to germination")
+```
+
+Graph for publication
+```{r echo=FALSE}
+fin_dataSG_biomass_seed_surv_trt_given_germ_soil_root_precip_g=fin_dataSG_biomass_seed_surv_trt_given_germ %>% group_by(soil_root,precip)
+root_shoot_soil_root_precip=summarise_at(fin_dataSG_biomass_seed_surv_trt_given_germ_soil_root_precip_g, 
+                                   "root_shoot", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+(seed_root_t_shoot_p=ggplot(root_shoot_soil_root_precip, aes(x=precip,y=mean, ymin = mean-se, ymax= mean+se,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+    geom_errorbar(position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,50))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Root:shoot given gemination")+
+    geom_text(aes(y=2, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+### Presence Root:shoot ratio given germination
+
+Diagnostic Graphs
+```{r}
+#now root:shoot ratio
+fin_dataSG_biomass_seed_surv_pres_w_germ=subset(fin_dataSG_biomass_seed_surv_trt_given_germ, root_association =="B")
+
+root_shoot_seed_model_pres= lmer(log(root_shoot)~precip*soil_root+(1|block), data= fin_dataSG_biomass_seed_surv_pres_w_germ)
+qqPlot(resid(root_shoot_seed_model_pres))
+hist(resid(root_shoot_seed_model_pres))
+shapiro.test(resid(root_shoot_seed_model_pres))
+#0.6602
+```
+Raw Statistical output
+```{r}
+anova(root_shoot_seed_model_pres, type=3)
+emmeans(root_shoot_seed_model_pres, pairwise~soil_root)
+emmeans(root_shoot_seed_model_pres, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_root_shoot_seed_model_pres=anova(root_shoot_seed_model_pres)
+df_anova_root_shoot_seed_model_pres=data.frame(row.names = row.names(anova_root_shoot_seed_model_pres),"Df"=anova_root_shoot_seed_model_pres$NumDF,"Resid Df"=anova_root_shoot_seed_model_pres$DenDF,"F-value"=anova_root_shoot_seed_model_pres$`F value`,"P-value"=anova_root_shoot_seed_model_pres$`Pr(>F)`)
+kable(df_anova_root_shoot_seed_model_pres,align = "c",digits = c(1,2,2,3), caption= "Root:Shoot given germination")
+```
+### Origin Root:shoot ratio given germination
+
+Diagnostic Graphs
+```{r}
+#now root:shoot ratio
+fin_dataSG_biomass_seed_surv_orig_w_germ=subset(fin_dataSG_biomass_seed_surv_trt_given_germ, soil_status =="L")
+
+root_shoot_seed_model_orig= lmer(log(root_shoot)~precip*soil_root+(1|block), data= fin_dataSG_biomass_seed_surv_orig_w_germ)
+qqPlot(resid(root_shoot_seed_model_orig))
+hist(resid(root_shoot_seed_model_orig))
+shapiro.test(resid(root_shoot_seed_model_orig))
+#0.2958
+```
+Raw Statistical output
+```{r}
+anova(root_shoot_seed_model_orig, type=3)
+emmeans(root_shoot_seed_model_orig, pairwise~soil_root)
+emmeans(root_shoot_seed_model_orig, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_root_shoot_seed_model_orig=anova(root_shoot_seed_model_orig)
+df_anova_root_shoot_seed_model_orig=data.frame(row.names = row.names(anova_root_shoot_seed_model_orig),"Df"=anova_root_shoot_seed_model_orig$NumDF,"Resid Df"=anova_root_shoot_seed_model_orig$DenDF,"F-value"=anova_root_shoot_seed_model_orig$`F value`,"P-value"=anova_root_shoot_seed_model_orig$`Pr(>F)`)
+kable(df_anova_root_shoot_seed_model_orig,align = "c",digits = c(1,2,2,3), caption= "Root:Shoot given germination")
+```
+
+### Soil nitrate
+
+Diagnostic Graphs
+```{r}
+SG_inorg_N_trt$soil_root=with(SG_inorg_N_trt, interaction(soil_status,root_association))
+
+SG_inorg_N_seed_trt= subset(SG_inorg_N_trt, life_stage=="S")
+SG_soil_nit_model= lmer((ug_N_NO3_g_dry_soil)~precip*soil_root+(1|block), data= SG_inorg_N_seed_trt)
+qqPlot(resid(SG_soil_nit_model))
+hist(resid(SG_soil_nit_model))
+shapiro.test(resid(SG_soil_nit_model))
+#0.7402
+
+```
+Raw Statistical output
+```{r}
+anova(SG_soil_nit_model, type=3)
+emmeans(SG_soil_nit_model, pairwise~soil_root)
+emmeans(SG_soil_nit_model, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_day_t0_germ_model_pres=anova(day_t0_germ_model_pres)
+df_anova_day_t0_germ_model_pres=data.frame(row.names = row.names(anova_day_t0_germ_model_pres),"Df"=anova_day_t0_germ_model_pres$NumDF,"Resid Df"=anova_day_t0_germ_model_pres$DenDF,"F-value"=anova_day_t0_germ_model_pres$`F value`,"P-value"=anova_day_t0_germ_model_pres$`Pr(>F)`)
+kable(df_anova_day_t0_germ_model_pres,align = "c",digits = c(1,2,2,3), caption= "Days to germination")
+```
+Graph for publication
+```{r echo=FALSE}
+SG_inorg_N_seed_trt_soil_root_precip_g=SG_inorg_N_seed_trt %>% group_by(soil_root,precip)
+soil_nit_seed_trt=summarise_at(SG_inorg_N_seed_trt_soil_root_precip_g, 
+                                    "ug_N_NO3_g_dry_soil", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+(seed_soil_nitrate_p2=ggplot(soil_nit_seed_trt, aes(x=precip,y=mean, ymin = mean-se, ymax= mean+se,fill=factor(soil_root,levels = treatment_order)))+
+   geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+   geom_errorbar(position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,9))+
+   scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+   scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Soil nitrate (ug per g soil)")+
+   geom_text(aes(y=0.5, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+   theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+         legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+### Soil ammonium
+
+Diagnostic Graphs
+```{r}
+SG_soil_amm_model= lmer((ug_N_NH4_g_dry_soil_negto0)~precip*soil_root+(1|block), data= SG_inorg_N_seed_trt)
+qqPlot(resid(SG_soil_amm_model))
+hist(resid(SG_soil_amm_model))
+shapiro.test(resid(SG_soil_amm_model))
+#p-value = 7.899e-05
+```
+Raw Statistical output
+```{r}
+anova(SG_soil_amm_model, type=3)
+emmeans(SG_soil_amm_model, pairwise~soil_root)
+emmeans(SG_soil_amm_model, pairwise~soil_root|precip)
+```
+Graph for publication
+```{r echo=FALSE}
+SG_inorg_N_seed_trt_soil_root_precip_g=SG_inorg_N_seed_trt %>% group_by(soil_root,precip)
+soil_amm_seed_trt=summarise_at(SG_inorg_N_seed_trt_soil_root_precip_g, 
+                               "ug_N_NH4_g_dry_soil_negto0", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+(seed_soil_amm_p2=ggplot(soil_amm_seed_trt, aes(x=precip,y=mean, ymin = mean-se, ymax= mean+se,fill=factor(soil_root,levels = treatment_order)))+
+   geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+   geom_errorbar(position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,4.5))+
+   scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+   scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Soil ammonium (ug per g soil)")+
+   geom_text(aes(y=mean+se+0.3, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+   theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+         legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+
+## TRANSPLANT PORTION OF THE EXPERIEMENT BEGINING
+Was there treatment effects on intial survival
+
+```{r include=FALSE}
+summary(dataSG_trans_surv_trt)
+dataSG_trans_surv_trt_g=group_by(dataSG_trans_surv_trt, Plant_Number)
+total_transs_transplanted=summarise_at(dataSG_trans_surv_trt_g, "Transplant_height_cm", list(~sum(.,na.rm = TRUE),times_replaced=~nnzero(.,na.counted = F)))
+colnames(total_transs_transplanted)[2]="tot_Transplant_height_cm"
+summary(total_transs_transplanted)
+nrow(total_transs_transplanted)
+
+fin_dataSG_trans_surv_trt=subset(dataSG_trans_surv_trt, date=="7_9")
+nrow(fin_dataSG_trans_surv_trt)
+fin_dataSG_trans_surv_trt_merge=merge(fin_dataSG_trans_surv_trt,total_transs_transplanted, by="Plant_Number")
+nrow(fin_dataSG_trans_surv_trt_merge)
+fin_dataSG_trans_surv_trt_merge$int_surv=fin_dataSG_trans_surv_trt_merge$tot_Transplant_height_cm
+fin_dataSG_trans_surv_trt_merge$int_surv[fin_dataSG_trans_surv_trt_merge$int_surv==0]=1
+fin_dataSG_trans_surv_trt_merge$int_surv[fin_dataSG_trans_surv_trt_merge$int_surv!=1]=0
+fin_dataSG_trans_surv_trt_merge$soil_root=with(fin_dataSG_trans_surv_trt_merge, interaction(soil_status,root_association))
+
+summary(fin_dataSG_trans_surv_trt_merge)
+
+
+hist(fin_dataSG_trans_surv_trt_merge$int_surv)
+```
+
+Graph 
+```{r echo=FALSE}
+fin_fin_dataSG_trans_surv_trt_soil_root_precip_g=fin_dataSG_trans_surv_trt_merge %>% group_by(soil_root,precip)
+int_surv_soil_root_precip=summarise_at(fin_fin_dataSG_trans_surv_trt_soil_root_precip_g, "int_surv", mean)
+
+ggplot(int_surv_soil_root_precip, aes(precip,int_surv))+geom_bar(position="dodge",stat="identity", color="black",aes(fill=soil_root))+
+  scale_fill_manual(values = c("gray", "white", "black"),labels=c("Bulk","Sterile","Rhizo"))+
+  scale_x_discrete(labels=c("Ambient","Drought"))+ylab("First week Transplant Survival")
+```
+Was there a bias in initial height?
+
+```{r include=FALSE}
+summary(fin_dataSG_trans_surv_trt_merge)
+summary(SG_planting_data)
+fin_dataSG_trans_surv_trt_planting=merge(fin_dataSG_trans_surv_trt_merge,SG_planting_data[,c("Plant_Number","height_cm","leaf_num")], by="Plant_Number")
+nrow(fin_dataSG_trans_surv_trt_planting)
+
+#make the intial height leaf column
+fin_dataSG_trans_surv_trt_planting$int_height_cm=ifelse(fin_dataSG_trans_surv_trt_planting$times_replaced==0,fin_dataSG_trans_surv_trt_planting$height_cm,fin_dataSG_trans_surv_trt_planting$tot_Transplant_height_cm)
+summary(fin_dataSG_trans_surv_trt_planting)
+hist(fin_dataSG_trans_surv_trt_planting$int_height_cm)
+
+```
+Diagnostic Graphs
+```{r}
+SG_intial_height_model= lmer((int_height_cm)^(1/3)~precip*soil_root+(1|block), data= fin_dataSG_trans_surv_trt_planting)
+qqPlot(resid(SG_intial_height_model))
+hist(resid(SG_intial_height_model))
+shapiro.test(resid(SG_intial_height_model))
+#p-value = 0.0001383
+
+```
+Raw Statistical output
+```{r}
+anova(SG_intial_height_model)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SG_intial_height_model=anova(SG_intial_height_model)
+df_anova_SG_intial_height_model=data.frame(row.names = row.names(anova_SG_intial_height_model),"Df"=anova_SG_intial_height_model$NumDF,"Resid Df"=anova_SG_intial_height_model$DenDF,"F-value"=anova_SG_intial_height_model$`F value`,"P-value"=anova_SG_intial_height_model$`Pr(>F)`)
+kable(df_anova_SG_intial_height_model,align = "c",digits = c(1,2,2,3), caption= "")
+```
+### Total biomass
+
+```{r include=FALSE}
+data_SG_biomass_trans_surv_trt=merge(fin_dataSG_trans_surv_trt, data_SG_biomass, by="Plant_Number", all.x = T)
+data_SG_biomass_trans_surv_trt$soil_root=with(data_SG_biomass_trans_surv_trt, interaction(soil_status,root_association))
+summary(data_SG_biomass_trans_surv_trt)
+data_SG_biomass_trans_surv_trt$total_biomass[data_SG_biomass_trans_surv_trt$total_biomass==0]=NA
+data_SG_biomass_trans_surv_trt$total_biomass_0=data_SG_biomass_trans_surv_trt$total_biomass
+data_SG_biomass_trans_surv_trt$total_biomass_0[is.na(data_SG_biomass_trans_surv_trt$total_biomass_0)]=0
+
+data_SG_biomass_trans_surv_trt$root_weight_g_0=data_SG_biomass_trans_surv_trt$root_weight_g
+data_SG_biomass_trans_surv_trt$root_weight_g_0[is.na(data_SG_biomass_trans_surv_trt$root_weight_g_0)]=0
+
+data_SG_biomass_trans_surv_trt$shoot_weight_g_0=data_SG_biomass_trans_surv_trt$shoot_weight_g
+data_SG_biomass_trans_surv_trt$shoot_weight_g_0[is.na(data_SG_biomass_trans_surv_trt$shoot_weight_g_0)]=0
+summary(data_SG_biomass_trans_surv_trt)
+```
+Diagnostic Graphs
+```{r}
+trans_biomas_model= lmer(log(total_biomass_0+.001)~precip*soil_root+(1|block), data= data_SG_biomass_trans_surv_trt)
+qqPlot(resid(trans_biomas_model))
+hist(resid(trans_biomas_model))
+shapiro.test(resid(trans_biomas_model))
+
+```
+Raw Statistical output
+```{r}
+anova(trans_biomas_model, type=3)
+emmeans(trans_biomas_model, pairwise~soil_root)
+emmeans(trans_biomas_model, pairwise~soil_root|precip)
+
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_trans_biomas_model=anova(trans_biomas_model)
+df_anova_trans_biomas_model=data.frame(row.names = row.names(trans_biomas_model),"Df"=anova_trans_biomas_model$NumDF,"Resid Df"=anova_trans_biomas_model$DenDF,"F-value"=anova_trans_biomas_model$`F value`,"P-value"=anova_trans_biomas_model$`Pr(>F)`)
+kable(df_anova_trans_biomas_model,align = "c",digits = c(1,2,2,3), caption= "Total biomass")
+```
+
+Graph for publication
+
+```{r echo=FALSE}
+data_SG_biomass_trans_surv_trt_soil_root_precip_g=data_SG_biomass_trans_surv_trt %>% group_by(soil_root,precip)
+trans_total_bio_soil_root_precip=summarise_at(data_SG_biomass_trans_surv_trt_soil_root_precip_g, 
+                                        "total_biomass_0", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+(trans_biomass_p=ggplot(trans_total_bio_soil_root_precip, aes(x=precip,y=mean, ymin = mean-se, ymax= mean+se,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+    geom_errorbar(position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,.95))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Seedling biomass (g)")+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+#800x750
+
+```
+
+
+#### Percent Difference Drought v Ambient
+```{r echo=FALSE}
+data_SG_biomass_trans_surv_trt_precip_g=data_SG_biomass_trans_surv_trt %>% group_by(precip)
+trans_total_bio_precip=summarise_at(data_SG_biomass_trans_surv_trt_precip_g, 
+                                        "total_biomass_0", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+
+((trans_total_bio_precip[trans_total_bio_precip$precip=="D",]$mean-trans_total_bio_precip[trans_total_bio_precip$precip=="A",]$mean)/trans_total_bio_precip[trans_total_bio_precip$precip=="A",]$mean)*100
+
+```
+
+#### Percent Difference live v sterile in Ambient
+```{r echo=FALSE}
+
+data_SG_biomass_trans_surv_trt_soil_root_precip_g=data_SG_biomass_trans_surv_trt %>% group_by(soil_root,precip)
+trans_total_bio_soil_root_precip=summarise_at(data_SG_biomass_trans_surv_trt_soil_root_precip_g, 
+                                        "total_biomass_0", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+
+((trans_total_bio_soil_root_precip[trans_total_bio_soil_root_precip$precip=="A"&trans_total_bio_soil_root_precip$soil_root=="L.B",]$mean-trans_total_bio_soil_root_precip[trans_total_bio_soil_root_precip$precip=="A"&trans_total_bio_soil_root_precip$soil_root=="S.B",]$mean)/trans_total_bio_soil_root_precip[trans_total_bio_soil_root_precip$precip=="A"&trans_total_bio_soil_root_precip$soil_root=="S.B",]$mean)*100
+
+```
+
+
+### Presence at total biomass
+
+Diagnostic Graphs
+```{r}
+data_SG_biomass_trans_surv_pres=subset(data_SG_biomass_trans_surv_trt, root_association =="B")
+
+trans_biomas_model_pres= lmer((total_biomass_0+.001)^(1/4)~precip*soil_root+(1|block), data= data_SG_biomass_trans_surv_pres)
+qqPlot(resid(trans_biomas_model_pres))
+hist(resid(trans_biomas_model_pres))
+shapiro.test(resid(trans_biomas_model_pres))
+#p-value = 0.254
+```
+Raw Statistical output
+```{r}
+anova(trans_biomas_model_pres, type=3)
+emmeans(trans_biomas_model_pres, pairwise~soil_root)
+emmeans(trans_biomas_model_pres, pairwise~soil_root|precip)
+
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_trans_biomas_model_pres=anova(trans_biomas_model_pres)
+df_anova_trans_biomas_model_pres=data.frame(row.names = row.names(trans_biomas_model_pres),"Df"=anova_trans_biomas_model_pres$NumDF,"Resid Df"=anova_trans_biomas_model_pres$DenDF,"F-value"=anova_trans_biomas_model_pres$`F value`,"P-value"=anova_trans_biomas_model_pres$`Pr(>F)`)
+kable(df_anova_trans_biomas_model_pres,align = "c",digits = c(1,2,2,3), caption= "Total biomass")
+```
+
+### Origin at total biomass
+
+Diagnostic Graphs
+```{r}
+data_SG_biomass_trans_surv_orig=subset(data_SG_biomass_trans_surv_trt, soil_status =="L")
+nrow(data_SG_biomass_trans_surv_orig)
+
+trans_biomas_model_orig= lmer((total_biomass_0+0.001)^(1/4)~precip*soil_root+(1|block), data= data_SG_biomass_trans_surv_orig)
+qqPlot(resid(trans_biomas_model_orig))
+hist(resid(trans_biomas_model_orig))
+shapiro.test(resid(trans_biomas_model_orig))
+#p-value = 0.1856
+```
+Raw Statistical output
+```{r}
+anova(trans_biomas_model_orig)
+emmeans(trans_biomas_model_orig, pairwise~soil_root)
+emmeans(trans_biomas_model_orig, pairwise~soil_root|precip)
+
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_trans_biomas_model_orig=anova(trans_biomas_model_orig)
+df_anova_trans_biomas_model_orig=data.frame(row.names = row.names(anova_trans_biomas_model_orig),"Df"=anova_trans_biomas_model_orig$NumDF,"Resid Df"=anova_trans_biomas_model_orig$DenDF,"F-value"=anova_trans_biomas_model_orig$`F value`,"P-value"=anova_trans_biomas_model_orig$`Pr(>F)`)
+kable(df_anova_trans_biomas_model_orig,align = "c",digits = c(1,2,2,3), caption= "Total biomass")
+```
+
+# Root:shoot ratio
+
+```{r include=FALSE}
+data_SG_biomass_trans_surv_trt_na=subset(data_SG_biomass_trans_surv_trt,total_biomass!=0)
+summary(data_SG_biomass_trans_surv_trt_na)
+data_SG_biomass_trans_surv_trt_na$root_shoot=data_SG_biomass_trans_surv_trt_na$root_weight_g/data_SG_biomass_trans_surv_trt_na$shoot_weight_g
+
+
+summary(data_SG_biomass_trans_surv_trt_na)
+```
+
+
+Diagnostic Graphs
+```{r}
+root_shoot_model_na= lmer(log(root_shoot)~precip*soil_root+(1|block), data= data_SG_biomass_trans_surv_trt_na)
+qqPlot(resid(root_shoot_model_na))
+hist(resid(root_shoot_model_na))
+shapiro.test(resid(root_shoot_model_na))
+#p-value = 0.001287
+plot(root_shoot_model_na)
+```
+Raw Statistical output
+```{r}
+anova(root_shoot_model_na)
+emmeans(root_shoot_model_na, pairwise~soil_root)
+emmeans(root_shoot_model_na, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_root_shoot_model_na=anova(root_shoot_model_na)
+df_anova_root_shoot_model_na=data.frame(row.names = row.names(anova_root_shoot_model_na),"Df"=anova_root_shoot_model_na$NumDF,"Resid Df"=anova_root_shoot_model_na$DenDF,"F-value"=anova_root_shoot_model_na$`F value`,"P-value"=anova_root_shoot_model_na$`Pr(>F)`)
+kable(df_anova_root_shoot_model_na,align = "c",digits = c(1,2,2,3), caption= "Root:Shoot Ratio")
+```
+
+Graph for publication
+
+```{r echo=FALSE}
+data_SG_biomass_trans_surv_trt_na_soil_root_precip_g=data_SG_biomass_trans_surv_trt_na %>% group_by(soil_root,precip)
+trans_root_shoot_soil_root_precip_na=summarise_at(data_SG_biomass_trans_surv_trt_na_soil_root_precip_g, 
+                                                "root_shoot", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+(trans_root_t_shoot_p2=ggplot(trans_root_shoot_soil_root_precip_na, aes(x=precip,y=mean, ymin = mean-se, ymax= mean+se,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+    geom_errorbar(position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,14))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Root:shoot")+
+    geom_text(aes(y=1, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+### Presence Root:shoot ratio
+
+
+Diagnostic Graphs
+```{r}
+data_SG_biomass_trans_surv_pres_na=subset(data_SG_biomass_trans_surv_trt_na, root_association =="B")
+
+root_shoot_model_pres_na= lmer((root_shoot)^(1/4)~precip*soil_root+(1|block), data= data_SG_biomass_trans_surv_pres_na)
+qqPlot(resid(root_shoot_model_pres_na))
+hist(resid(root_shoot_model_pres_na))
+shapiro.test(resid(root_shoot_model_pres_na))
+#p-value = 0.01335
+plot(root_shoot_model_pres_na)
+
+```
+Raw Statistical output
+```{r}
+anova(root_shoot_model_pres_na)
+emmeans(root_shoot_model_pres_na, pairwise~soil_root)
+emmeans(root_shoot_model_pres_na, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_root_shoot_model_pres_na=anova(root_shoot_model_pres_na)
+df_anova_root_shoot_model_pres_na=data.frame(row.names = row.names(anova_root_shoot_model_pres_na),"Df"=anova_root_shoot_model_pres_na$NumDF,"Resid Df"=anova_root_shoot_model_pres_na$DenDF,"F-value"=anova_root_shoot_model_pres_na$`F value`,"P-value"=anova_root_shoot_model_pres_na$`Pr(>F)`)
+kable(df_anova_root_shoot_model_pres_na,align = "c",digits = c(1,2,2,3), caption= "Root:Shoot Ratio")
+```
+
+### Origin Root:shoot ratio
+
+
+
+Diagnostic Graphs
+```{r}
+data_SG_biomass_trans_surv_orig_na=subset(data_SG_biomass_trans_surv_trt_na,soil_status =="L")
+
+root_shoot_model_orig_na= lmer(log(root_shoot)~precip*soil_root+(1|block), data= data_SG_biomass_trans_surv_orig_na)
+qqPlot(resid(root_shoot_model_orig_na))
+hist(resid(root_shoot_model_orig_na))
+shapiro.test(resid(root_shoot_model_orig_na))
+#p-value = 0.02169
+plot(root_shoot_model_orig_na)
+
+```
+Raw Statistical output
+```{r}
+anova(root_shoot_model_orig_na)
+emmeans(root_shoot_model_orig_na, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_root_shoot_model_orig_na=anova(root_shoot_model_orig_na)
+df_anova_root_shoot_model_orig_na=data.frame(row.names = row.names(anova_root_shoot_model_orig_na),"Df"=anova_root_shoot_model_orig_na$NumDF,"Resid Df"=anova_root_shoot_model_orig_na$DenDF,"F-value"=anova_root_shoot_model_orig_na$`F value`,"P-value"=anova_root_shoot_model_orig_na$`Pr(>F)`)
+kable(df_anova_root_shoot_model_orig_na,align = "c",digits = c(1,2,2,3), caption= "Root:Shoot Ratio")
+```
+
+## Final survival
+
+```{r inlcude=FALSE}
+data_SG_biomass_trans_surv_trt$surv=data_SG_biomass_trans_surv_trt$total_biomass
+data_SG_biomass_trans_surv_trt$surv[is.na(data_SG_biomass_trans_surv_trt$surv)]=0
+data_SG_biomass_trans_surv_trt$surv[data_SG_biomass_trans_surv_trt$surv!=0]=1
+```
+
+Diagnostic Graphs
+```{r}
+
+
+```
+Raw Statistical output
+```{r}
+
+```
+
+
+Graph for publication
+
+```{r echo=FALSE}
+data_SG_biomass_trans_surv_trt_soil_root_precip_out_g=data_SG_biomass_trans_surv_trt %>% group_by(soil_root,precip)
+trans_survial_soil_root_precip=summarise_at(data_SG_biomass_trans_surv_trt_soil_root_precip_out_g, 
+                                                      "surv", funs(n(),mean))
+trans_survial_soil_root_precip$mean_per=trans_survial_soil_root_precip$mean*100
+(trans_surv_per_p=ggplot(trans_survial_soil_root_precip, aes(x=precip,y=mean_per,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("% seedling survival")+scale_y_continuous(limits = c(0,120), breaks = c(0,20,40,60,80,100))+
+    geom_text(aes(y=7, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+
+#### Percent Difference Drought v Ambient
+```{r echo=FALSE}
+data_SG_biomass_trans_surv_trt_precip_out_g=data_SG_biomass_trans_surv_trt %>% group_by(precip)
+trans_survial_precip=summarise_at(data_SG_biomass_trans_surv_trt_precip_out_g, 
+                                                      "surv", funs(n(),mean))
+
+((trans_survial_precip[trans_survial_precip$precip=="D",]$mean-trans_survial_precip[trans_survial_precip$precip=="A",]$mean)/trans_survial_precip[trans_survial_precip$precip=="A",]$mean)*100
+
+```
+
+### Survival of the transplant
+Final survival in the drought treatment only since all pots had live transs in the ambient treatments
+
+
+Diagnostic Graphs
+```{r}
+data_SG_biomass_trans_surv_drought=subset(data_SG_biomass_trans_surv_trt, precip=="D")
+drought_surv_model= glmer(surv~soil_root+(1|block), data= data_SG_biomass_trans_surv_drought, family = binomial)
+qqPlot(resid(drought_surv_model))
+hist(resid(drought_surv_model))
+
+```
+Raw Statistical output
+```{r}
+Anova(drought_surv_model,type = 3)
+emmeans(drought_surv_model, pairwise~soil_root)
+
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_drought_surv_model=Anova(drought_surv_model,type = 3)
+df_Anova_drought_surv_model=data.frame(row.names =row.names(Anova_drought_surv_model),"Df"=Anova_drought_surv_model$Df,"Chi-Sq"=Anova_drought_surv_model$Chisq,"P-value"=Anova_drought_surv_model$`Pr(>Chisq)`)
+kable(df_Anova_drought_surv_model,align = "c",digits = c(2,2,3), caption= "Survival")
+```
+
+### Presence survival of the transplant
+
+
+
+Diagnostic Graphs
+```{r}
+data_SG_biomass_trans_surv_drought_pres=subset(data_SG_biomass_trans_surv_drought, root_association =="B")
+
+drought_surv_model_pres= glmer(surv~soil_root+(1|block), data= data_SG_biomass_trans_surv_drought_pres, family = binomial)
+qqPlot(resid(drought_surv_model_pres))
+hist(resid(drought_surv_model_pres))
+
+```
+Raw Statistical output
+```{r}
+Anova(drought_surv_model_pres,type = 3)
+emmeans(drought_surv_model_pres, pairwise~soil_root)
+
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_drought_surv_model_pres=Anova(drought_surv_model_pres,type = 3)
+df_Anova_drought_surv_model_pres=data.frame(row.names =row.names(Anova_drought_surv_model_pres),"Df"=Anova_drought_surv_model_pres$Df,"Chi-Sq"=Anova_drought_surv_model_pres$Chisq,"P-value"=Anova_drought_surv_model_pres$`Pr(>Chisq)`)
+kable(df_Anova_drought_surv_model_pres,align = "c",digits = c(2,2,3), caption= "Survival")
+```
+
+
+### Origin survival of the transplant####
+
+
+Diagnostic Graphs
+```{r}
+data_SG_biomass_trans_surv_drought_orig=subset(data_SG_biomass_trans_surv_drought, soil_status =="L")
+
+drought_surv_model_orig= glmer(surv~soil_root+(1|block), data= data_SG_biomass_trans_surv_drought_orig, family = binomial)
+qqPlot(resid(drought_surv_model_orig))
+hist(resid(drought_surv_model_orig))
+
+```
+Raw Statistical output
+```{r}
+Anova(drought_surv_model_orig,type = 3)
+emmeans(drought_surv_model_orig, pairwise~soil_root)
+
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_drought_surv_model_orig=Anova(drought_surv_model_orig,type = 3)
+df_Anova_drought_surv_model_orig=data.frame(row.names =row.names(Anova_drought_surv_model_orig),"Df"=Anova_drought_surv_model_orig$Df,"Chi-Sq"=Anova_drought_surv_model_orig$Chisq,"P-value"=Anova_drought_surv_model_orig$`Pr(>Chisq)`)
+kable(df_Anova_drought_surv_model_orig,align = "c",digits = c(2,2,3), caption= "Survival")
+```
+
+
+# Root traits 
+
+## SRL
+
+```{r include=FALSE}
+summary(SG_roottraits_trt)
+SG_roottraits_trt$soil_root=with(SG_roottraits_trt, interaction(soil_status,root_association))
+```
+
+Diagnostic Graphs
+```{r}
+SRL_trans_model= lmer((SRL_length_drymass)~precip*soil_root+(1|block), data= SG_roottraits_trt)
+qqPlot(resid(SRL_trans_model))
+hist(resid(SRL_trans_model))
+shapiro.test(resid(SRL_trans_model))
+```
+Raw Statistical output
+```{r}
+anova(SRL_trans_model)
+emmeans(SRL_trans_model, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SRL_trans_model=anova(SRL_trans_model)
+df_anova_SRL_trans_model=data.frame(row.names = row.names(anova_SRL_trans_model),"Df"=anova_SRL_trans_model$NumDF,"Resid Df"=anova_SRL_trans_model$DenDF,"F-value"=anova_SRL_trans_model$`F value`,"P-value"=anova_SRL_trans_model$`Pr(>F)`)
+kable(df_anova_SRL_trans_model,align = "c",digits = c(1,2,2,3), caption= "SRL")
+```
+Graph for publication
+
+```{r echo=FALSE}
+SG_roottraits_trt_soil_root_precip_g=SG_roottraits_trt %>% group_by(soil_root,precip)
+SRL_trans_soil_root_precip=summarise_at(SG_roottraits_trt_soil_root_precip_g, 
+                                        "SRL_length_drymass", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+(SRL_trans_p2=ggplot(SRL_trans_soil_root_precip, aes(x=precip,y=mean, ymin = mean-se, ymax= mean+se,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+    geom_errorbar(position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,29000))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Specific root length (cm/g)")+
+    geom_text(aes(y=2000, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))  
+```
+
+#### Percent Difference Drought v Ambient
+```{r echo=FALSE}
+SG_roottraits_trt_precip_g=SG_roottraits_trt %>% group_by(precip)
+SRL_trans_precip=summarise_at(SG_roottraits_trt_precip_g, 
+                                        "SRL_length_drymass", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+
+((SRL_trans_precip[SRL_trans_precip$precip=="D",]$mean-SRL_trans_precip[SRL_trans_precip$precip=="A",]$mean)/SRL_trans_precip[SRL_trans_precip$precip=="A",]$mean)*100
+
+```
+
+
+#### Percent Difference live v sterile in Drought
+```{r echo=FALSE}
+
+SG_roottraits_trt_soil_root_precip_g=SG_roottraits_trt %>% group_by(soil_root,precip)
+SRL_trans_soil_root_precip=summarise_at(SG_roottraits_trt_soil_root_precip_g, 
+                                        "SRL_length_drymass", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+
+((SRL_trans_soil_root_precip[SRL_trans_soil_root_precip$precip=="D"&SRL_trans_soil_root_precip$soil_root=="L.B",]$mean-SRL_trans_soil_root_precip[SRL_trans_soil_root_precip$precip=="D"&SRL_trans_soil_root_precip$soil_root=="S.B",]$mean)/SRL_trans_soil_root_precip[SRL_trans_soil_root_precip$precip=="D"&SRL_trans_soil_root_precip$soil_root=="S.B",]$mean)*100
+
+```
+
+### Presence specific root length
+
+
+Diagnostic Graphs
+```{r}
+SG_roottraits_pres=subset(SG_roottraits_trt, root_association =="B")
+
+SRL_trans_model_pres= lmer((SRL_length_drymass)~precip*soil_root+(1|block), data= SG_roottraits_pres)
+qqPlot(resid(SRL_trans_model_pres))
+hist(resid(SRL_trans_model_pres))
+shapiro.test(resid(SRL_trans_model_pres))
+```
+Raw Statistical output
+```{r}
+anova(SRL_trans_model_pres)
+emmeans(SRL_trans_model_pres, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SRL_trans_model_pres=anova(SRL_trans_model_pres)
+df_anova_SRL_trans_model_pres=data.frame(row.names = row.names(anova_SRL_trans_model_pres),"Df"=anova_SRL_trans_model_pres$NumDF,"Resid Df"=anova_SRL_trans_model_pres$DenDF,"F-value"=anova_SRL_trans_model_pres$`F value`,"P-value"=anova_SRL_trans_model_pres$`Pr(>F)`)
+kable(df_anova_SRL_trans_model_pres,align = "c",digits = c(1,2,2,3), caption= "SRL")
+```
+
+### Origin specific root length
+
+
+
+Diagnostic Graphs
+```{r}
+SG_roottraits_orig=subset(SG_roottraits_trt,soil_status =="L")
+SRL_trans_model_orig= lmer((SRL_length_drymass)~precip*soil_root+(1|block), data= SG_roottraits_orig)
+qqPlot(resid(SRL_trans_model_orig))
+hist(resid(SRL_trans_model_orig))
+shapiro.test(resid(SRL_trans_model_orig))
+```
+Raw Statistical output
+```{r}
+anova(SRL_trans_model_orig)
+emmeans(SRL_trans_model_orig, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SRL_trans_model_orig=anova(SRL_trans_model_orig)
+df_anova_SRL_trans_model_orig=data.frame(row.names = row.names(anova_SRL_trans_model_orig),"Df"=anova_SRL_trans_model_orig$NumDF,"Resid Df"=anova_SRL_trans_model_orig$DenDF,"F-value"=anova_SRL_trans_model_orig$`F value`,"P-value"=anova_SRL_trans_model_orig$`Pr(>F)`)
+kable(df_anova_SRL_trans_model_orig,align = "c",digits = c(1,2,2,3), caption= "SRL")
+```
+
+### Root length density 
+
+
+Diagnostic Graphs
+```{r}
+RLD_trans_model= lmer((RLD_length_volume)~precip*soil_root+(1|block), data= SG_roottraits_trt)
+qqPlot(resid(RLD_trans_model))
+hist(resid(RLD_trans_model))
+
+```
+Raw Statistical output
+```{r}
+anova(RLD_trans_model, type=3)
+emmeans(RLD_trans_model, pairwise~soil_root|precip)
+
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_RLD_trans_model=anova(RLD_trans_model)
+df_anova_RLD_trans_model=data.frame(row.names = row.names(anova_RLD_trans_model),"Df"=anova_RLD_trans_model$NumDF,"Resid Df"=anova_RLD_trans_model$DenDF,"F-value"=anova_RLD_trans_model$`F value`,"P-value"=anova_RLD_trans_model$`Pr(>F)`)
+kable(df_anova_RLD_trans_model,align = "c",digits = c(1,2,2,3), caption= "RLD")
+```
+```{r echo=FALSE}
+treatment_order=c("S.B","L.B","L.R")
+SG_roottraits_trt_soil_root_precip_g=SG_roottraits_trt %>% group_by(soil_root,precip)
+RLD_trans_soil_root_precip=summarise_at(SG_roottraits_trt_soil_root_precip_g, 
+                                                 "RLD_length_volume", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+(RLD_trans_p2=ggplot(RLD_trans_soil_root_precip, aes(x=precip,y=mean, ymin = mean-se, ymax= mean+se,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+    geom_errorbar(position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,3))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Root length density (cm/mL)")+
+    geom_text(aes(y=0.2, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+
+## Rhizosheath 
+
+
+Diagnostic Graphs
+```{r}
+rhizosheath_model= lmer(log(RhizosheathSoil_DryRoots_g +1)~precip*soil_root+(1|block), data= SG_roottraits_trt)
+qqPlot(resid(rhizosheath_model))
+hist(resid(rhizosheath_model))
+shapiro.test(resid(rhizosheath_model))
+#0.6068
+
+```
+Raw Statistical output
+```{r}
+anova(rhizosheath_model, type=3)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_rhizosheath_model=anova(rhizosheath_model)
+df_anova_rhizosheath_model=data.frame(row.names = row.names(anova_rhizosheath_model),"Df"=anova_rhizosheath_model$NumDF,"Resid Df"=anova_rhizosheath_model$DenDF,"F-value"=anova_rhizosheath_model$`F value`,"P-value"=anova_rhizosheath_model$`Pr(>F)`)
+kable(df_anova_rhizosheath_model,align = "c",digits = c(1,2,2,3), caption= "Rhizosheath")
+```
+
+Graph for publication
+```{r echo=FALSE}
+treatment_order=c("S.B","L.B","L.R")
+SG_roottraits_trt_soil_root_precip_g=SG_roottraits_trt %>% group_by(soil_root,precip)
+RhizoSheath_trans_soil_root_precip=summarise_at(SG_roottraits_trt_soil_root_precip_g, 
+                                        "RhizosheathSoil_DryRoots_g", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+(rhizosheath_trans_p2=ggplot(RhizoSheath_trans_soil_root_precip, aes(x=precip,y=mean, ymin = mean-se, ymax= mean+se,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+    geom_errorbar(position=position_dodge(width=0.9), width=0.2, size=1)+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Rhizosheath soil \nper dry roots (g/g)")+
+    geom_text(aes(y=1.8, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+ylim(0,35)+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+### Presence Rhizosheath 
+
+Diagnostic Graphs
+```{r}
+SG_roottraits_pres=subset(SG_roottraits_trt, root_association =="B")
+
+rhizosheath_model_pres= lmer(log(RhizosheathSoil_DryRoots_g)~precip*soil_root+(1|block), data= SG_roottraits_pres)
+qqPlot(resid(rhizosheath_model_pres))
+hist(resid(rhizosheath_model_pres))
+shapiro.test(resid(rhizosheath_model_pres))
+#0.5982
+
+```
+Raw Statistical output
+```{r}
+anova(rhizosheath_model_pres, type=3)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_rhizosheath_model_pres=anova(rhizosheath_model_pres)
+df_anova_rhizosheath_model_pres=data.frame(row.names = row.names(anova_rhizosheath_model_pres),"Df"=anova_rhizosheath_model_pres$NumDF,"Resid Df"=anova_rhizosheath_model_pres$DenDF,"F-value"=anova_rhizosheath_model_pres$`F value`,"P-value"=anova_rhizosheath_model_pres$`Pr(>F)`)
+kable(df_anova_rhizosheath_model_pres,align = "c",digits = c(1,2,2,3), caption= "Rhizosheath presence")
+```
+### Origin Rhizosheath 
+
+
+Diagnostic Graphs
+```{r}
+SG_roottraits_orig=subset(SG_roottraits_trt,soil_status =="L")
+
+rhizosheath_model_orig= lmer(log(RhizosheathSoil_DryRoots_g+1)~precip*soil_root+(1|block), data= SG_roottraits_orig)
+qqPlot(resid(rhizosheath_model_orig))
+hist(resid(rhizosheath_model_orig))
+shapiro.test(resid(rhizosheath_model_orig))
+#0.7577
+
+```
+Raw Statistical output
+```{r}
+anova(rhizosheath_model_orig, type=3)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_rhizosheath_model_orig=anova(rhizosheath_model_orig)
+df_anova_rhizosheath_model_orig=data.frame(row.names = row.names(anova_rhizosheath_model_orig),"Df"=anova_rhizosheath_model_orig$NumDF,"Resid Df"=anova_rhizosheath_model_orig$DenDF,"F-value"=anova_rhizosheath_model_orig$`F value`,"P-value"=anova_rhizosheath_model_orig$`Pr(>F)`)
+kable(df_anova_rhizosheath_model_orig,align = "c",digits = c(1,2,2,3), caption= "Rhizosheath origin")
+```
+
+## Soil nitrogen
+
+```{r include=FALSE}
+SG_inorg_N_trt$soil_root=with(SG_inorg_N_trt, interaction(soil_status,root_association))
+
+SG_inorg_N_trans_trt= subset(SG_inorg_N_trt, life_stage=="G")
+summary(SG_inorg_N_trans_trt)
+
+```
+Diagnostic Graphs
+```{r}
+SG_soil_nit_trans_model= lmer((ug_N_NO3_g_dry_soil)~precip*soil_root+(1|block), data= SG_inorg_N_trans_trt)
+qqPlot(resid(SG_soil_nit_trans_model))
+hist(resid(SG_soil_nit_trans_model))
+shapiro.test(resid(SG_soil_nit_trans_model))
+```
+Raw Statistical output
+```{r}
+anova(SG_soil_nit_trans_model, type=3)
+emmeans(SG_soil_nit_trans_model, pairwise~soil_root)
+emmeans(SG_soil_nit_trans_model, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SG_soil_nit_trans_model=anova(SG_soil_nit_trans_model)
+df_anova_SG_soil_nit_trans_model=data.frame(row.names = row.names(anova_SG_soil_nit_trans_model),"Df"=anova_SG_soil_nit_trans_model$NumDF,"Resid Df"=anova_SG_soil_nit_trans_model$DenDF,"F-value"=anova_SG_soil_nit_trans_model$`F value`,"P-value"=anova_SG_soil_nit_trans_model$`Pr(>F)`)
+kable(df_anova_SG_soil_nit_trans_model,align = "c",digits = c(1,2,2,3), caption= "Soil nitrate")
+```
+Graph for publication
+```{r echo=FALSE}
+trans_inorg_N_seed_trt_soil_root_precip_g=SG_inorg_N_trans_trt %>% group_by(soil_root,precip)
+soil_nit_trans_trt=summarise_at(trans_inorg_N_seed_trt_soil_root_precip_g, 
+                               "ug_N_NO3_g_dry_soil", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+(trans_soil_nitrate_p2=ggplot(soil_nit_trans_trt, aes(x=precip,y=mean, ymin = mean-se, ymax= mean+se,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+    geom_errorbar(position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,9))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Soil nitrate (ug per g soil)")+
+    geom_text(aes(y=.5, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+## Presence nitrate transplant
+
+
+Diagnostic Graphs
+```{r}
+SG_inorg_N_trans_pres=subset(SG_inorg_N_trans_trt, root_association =="B")
+SG_soil_nit_trans_model_pres= lmer((ug_N_NO3_g_dry_soil)~precip*soil_root+(1|block), data= SG_inorg_N_trans_pres)
+qqPlot(resid(SG_soil_nit_trans_model_pres))
+hist(resid(SG_soil_nit_trans_model_pres))
+shapiro.test(resid(SG_soil_nit_trans_model_pres))
+```
+Raw Statistical output
+```{r}
+anova(SG_soil_nit_trans_model_pres, type=3)
+emmeans(SG_soil_nit_trans_model_pres, pairwise~soil_root)
+emmeans(SG_soil_nit_trans_model_pres, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SG_soil_nit_trans_model_pres=anova(SG_soil_nit_trans_model_pres)
+df_anova_SG_soil_nit_trans_model_pres=data.frame(row.names = row.names(anova_SG_soil_nit_trans_model_pres),"Df"=anova_SG_soil_nit_trans_model_pres$NumDF,"Resid Df"=anova_SG_soil_nit_trans_model_pres$DenDF,"F-value"=anova_SG_soil_nit_trans_model_pres$`F value`,"P-value"=anova_SG_soil_nit_trans_model_pres$`Pr(>F)`)
+kable(df_anova_SG_soil_nit_trans_model_pres,align = "c",digits = c(1,2,2,3), caption= "Soil nitrate")
+```
+
+
+## Origin nitrate transplant
+
+
+Diagnostic Graphs
+```{r}
+SG_inorg_N_trans_orig=subset(SG_inorg_N_trans_trt,soil_status =="L")
+SG_soil_nit_trans_model_orig= lmer((ug_N_NO3_g_dry_soil)~precip*soil_root+(1|block), data= SG_inorg_N_trans_orig)
+qqPlot(resid(SG_soil_nit_trans_model_orig))
+hist(resid(SG_soil_nit_trans_model_orig))
+shapiro.test(resid(SG_soil_nit_trans_model_orig))
+```
+Raw Statistical output
+```{r}
+anova(SG_soil_nit_trans_model_orig, type=3)
+emmeans(SG_soil_nit_trans_model_orig, pairwise~soil_root)
+emmeans(SG_soil_nit_trans_model_orig, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SG_soil_nit_trans_model_orig=anova(SG_soil_nit_trans_model_orig)
+df_anova_SG_soil_nit_trans_model_orig=data.frame(row.names = row.names(anova_SG_soil_nit_trans_model_orig),"Df"=anova_SG_soil_nit_trans_model_orig$NumDF,"Resid Df"=anova_SG_soil_nit_trans_model_orig$DenDF,"F-value"=anova_SG_soil_nit_trans_model_orig$`F value`,"P-value"=anova_SG_soil_nit_trans_model_orig$`Pr(>F)`)
+kable(df_anova_SG_soil_nit_trans_model_orig,align = "c",digits = c(1,2,2,3), caption= "Soil nitrate")
+```
+
+## Ammonium
+
+
+Diagnostic Graphs
+```{r}
+SG_soil_amm_trans_model= lmer(log(ug_N_NH4_g_dry_soil_negto0+0.007)~precip*soil_root+(1|block), data= SG_inorg_N_trans_trt)
+qqPlot(resid(SG_soil_amm_trans_model))
+hist(resid(SG_soil_amm_trans_model))
+shapiro.test(resid(SG_soil_amm_trans_model))
+```
+Raw Statistical output
+```{r}
+anova(SG_soil_amm_trans_model, type=3)
+emmeans(SG_soil_amm_trans_model, pairwise~soil_root)
+emmeans(SG_soil_amm_trans_model, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SG_soil_amm_trans_model=anova(SG_soil_amm_trans_model)
+df_anova_SG_soil_amm_trans_model=data.frame(row.names = row.names(anova_SG_soil_amm_trans_model),"Df"=anova_SG_soil_amm_trans_model$NumDF,"Resid Df"=anova_SG_soil_amm_trans_model$DenDF,"F-value"=anova_SG_soil_amm_trans_model$`F value`,"P-value"=anova_SG_soil_amm_trans_model$`Pr(>F)`)
+kable(df_anova_SG_soil_amm_trans_model,align = "c",digits = c(1,2,2,3), caption= "Soil ammonium")
+```
+
+Graph for publication
+```{r echo=FALSE}
+trans_inorg_N_seed_trt_soil_root_precip_g=SG_inorg_N_trans_trt %>% group_by(soil_root,precip)
+soil_amm_trans_trt=summarise_at(trans_inorg_N_seed_trt_soil_root_precip_g, 
+                               "ug_N_NH4_g_dry_soil_negto0", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+(trans_soil_amm_p=ggplot(soil_amm_trans_trt, aes(x=precip,y=mean, ymin = mean-se, ymax= mean+se,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+    geom_errorbar(position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,4.5))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Soil ammonium (ug per g soil)")+
+    geom_text(aes(y=mean+se+0.3, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+
+### Presence Amonnium
+
+
+Diagnostic Graphs
+```{r}
+SG_inorg_N_trans_pres=subset(SG_inorg_N_trans_trt, root_association =="B")
+
+SG_soil_amm_trans_model_pres= lmer(sqrt(ug_N_NH4_g_dry_soil_negto0)~precip*soil_root+(1|block), data= SG_inorg_N_trans_pres)
+qqPlot(resid(SG_soil_amm_trans_model_pres))
+hist(resid(SG_soil_amm_trans_model_pres))
+shapiro.test(resid(SG_soil_amm_trans_model_pres))
+```
+Raw Statistical output
+```{r}
+anova(SG_soil_amm_trans_model_pres, type=3)
+emmeans(SG_soil_amm_trans_model_pres, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SG_soil_amm_trans_model_pres=anova(SG_soil_amm_trans_model_pres)
+df_anova_SG_soil_amm_trans_model_pres=data.frame(row.names = row.names(anova_SG_soil_amm_trans_model_pres),"Df"=anova_SG_soil_amm_trans_model_pres$NumDF,"Resid Df"=anova_SG_soil_amm_trans_model_pres$DenDF,"F-value"=anova_SG_soil_amm_trans_model_pres$`F value`,"P-value"=anova_SG_soil_amm_trans_model_pres$`Pr(>F)`)
+kable(df_anova_SG_soil_amm_trans_model_pres,align = "c",digits = c(1,2,2,3), caption= "Soil ammonium presence")
+```
+
+
+### Origin ammonium transplant
+
+
+
+Diagnostic Graphs
+```{r}
+SG_inorg_N_trans_orig=subset(SG_inorg_N_trans_trt,soil_status =="L")
+
+SG_soil_amm_trans_model_orig= lmer((ug_N_NH4_g_dry_soil_negto0)~precip*soil_root+(1|block), data= SG_inorg_N_trans_orig)
+qqPlot(resid(SG_soil_amm_trans_model_orig))
+hist(resid(SG_soil_amm_trans_model_orig))
+shapiro.test(resid(SG_soil_amm_trans_model_orig))
+```
+Raw Statistical output
+```{r}
+anova(SG_soil_amm_trans_model_orig, type=3)
+emmeans(SG_soil_amm_trans_model_orig, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SG_soil_amm_trans_model_orig=anova(SG_soil_amm_trans_model_orig)
+df_anova_SG_soil_amm_trans_model_orig=data.frame(row.names = row.names(anova_SG_soil_amm_trans_model_orig),"Df"=anova_SG_soil_amm_trans_model_orig$NumDF,"Resid Df"=anova_SG_soil_amm_trans_model_orig$DenDF,"F-value"=anova_SG_soil_amm_trans_model_orig$`F value`,"P-value"=anova_SG_soil_amm_trans_model_orig$`Pr(>F)`)
+kable(df_anova_SG_soil_amm_trans_model_orig,align = "c",digits = c(1,2,2,3), caption= "Soil ammonium origin")
+```
+
+## Combined nitrate
+
+Diagnostic Graphs
+```{r}
+SG_soil_NITRATE_model= lmer((ug_N_NO3_g_dry_soil)~precip*soil_root*life_stage+(1|block), data= SG_inorg_N_trt)
+qqPlot(resid(SG_soil_NITRATE_model))
+hist(resid(SG_soil_NITRATE_model))
+shapiro.test(resid(SG_soil_NITRATE_model))
+#0.2512
+
+```
+Raw Statistical output
+```{r}
+anova(SG_soil_NITRATE_model, type=3)
+
+emmeans(SG_soil_NITRATE_model, pairwise~soil_root)
+emmeans(SG_soil_NITRATE_model, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SG_soil_NITRATE_model=anova(SG_soil_NITRATE_model)
+df_anova_SG_soil_NITRATE_model=data.frame(row.names = row.names(anova_SG_soil_NITRATE_model),"Df"=anova_SG_soil_NITRATE_model$NumDF,"Resid Df"=anova_SG_soil_NITRATE_model$DenDF,"F-value"=anova_SG_soil_NITRATE_model$`F value`,"P-value"=anova_SG_soil_NITRATE_model$`Pr(>F)`)
+kable(df_anova_SG_soil_NITRATE_model,align = "c",digits = c(1,2,2,3), caption= "Soil Nitrate")
+```
+
+#### Percent Difference Drought v Ambient
+```{r echo=FALSE}
+
+SG_nitrate_N_trt_AC_trt=SG_inorg_N_trt %>% group_by(precip) %>% summarise_at("ug_N_NO3_g_dry_soil", list(~n(),~mean(.),sd,se=~sd(.)/sqrt(n())))
+
+((SG_nitrate_N_trt_AC_trt[SG_nitrate_N_trt_AC_trt$precip=="D",]$mean-SG_nitrate_N_trt_AC_trt[SG_nitrate_N_trt_AC_trt$precip=="A",]$mean)/SG_nitrate_N_trt_AC_trt[SG_nitrate_N_trt_AC_trt$precip=="A",]$mean)*100
+
+```
+
+## Combined ammonium
+
+Diagnostic Graphs
+```{r}
+SG_soil_AMMON_model= lmer(log(ug_N_NH4_g_dry_soil_negto0+0.001)~precip*soil_root*life_stage+(1|block), data= SG_inorg_N_trt)
+qqPlot(resid(SG_soil_AMMON_model))
+hist(resid(SG_soil_AMMON_model))
+shapiro.test(resid(SG_soil_AMMON_model))
+#0.4174
+
+```
+Raw Statistical output
+```{r}
+anova(SG_soil_AMMON_model, type=3)
+
+emmeans(SG_soil_AMMON_model, pairwise~soil_root)
+emmeans(SG_soil_AMMON_model, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SG_soil_AMMON_model=anova(SG_soil_AMMON_model)
+df_anova_SG_soil_AMMON_model=data.frame(row.names = row.names(anova_SG_soil_AMMON_model),"Df"=anova_SG_soil_AMMON_model$NumDF,"Resid Df"=anova_SG_soil_AMMON_model$DenDF,"F-value"=anova_SG_soil_AMMON_model$`F value`,"P-value"=anova_SG_soil_AMMON_model$`Pr(>F)`)
+kable(df_anova_SG_soil_AMMON_model,align = "c",digits = c(1,2,2,3), caption= "Soil Ammonium")
+```
+
+#### Percent Difference Drought v Ambient
+```{r echo=FALSE}
+
+SG_ammonium_N_trt_AC_trt=SG_inorg_N_trt %>% group_by(precip) %>% summarise_at("ug_N_NH4_g_dry_soil_negto0", list(~n(),~mean(.),sd,se=~sd(.)/sqrt(n())))
+
+((SG_ammonium_N_trt_AC_trt[SG_ammonium_N_trt_AC_trt$precip=="D",]$mean-SG_ammonium_N_trt_AC_trt[SG_ammonium_N_trt_AC_trt$precip=="A",]$mean)/SG_ammonium_N_trt_AC_trt[SG_ammonium_N_trt_AC_trt$precip=="A",]$mean)*100
+
+```
+
+## VWC Analyses
+
+Diagnostic Graphs
+```{r}
+SG_soil_VWC_model= lmer((percent_soil_moisture_dry_weight)~precip*soil_root*life_stage+(1|block), data= SG_inorg_N_trt)
+qqPlot(resid(SG_soil_VWC_model))
+hist(resid(SG_soil_VWC_model))
+shapiro.test(resid(SG_soil_VWC_model))
+#0.3377
+
+```
+Raw Statistical output
+```{r}
+anova(SG_soil_VWC_model, type=3)
+
+emmeans(SG_soil_VWC_model, pairwise~soil_root)
+emmeans(SG_soil_VWC_model, pairwise~soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SG_soil_VWC_model=anova(SG_soil_VWC_model)
+df_anova_SG_soil_VWC_model=data.frame(row.names = row.names(anova_SG_soil_VWC_model),"Df"=anova_SG_soil_VWC_model$NumDF,"Resid Df"=anova_SG_soil_VWC_model$DenDF,"F-value"=anova_SG_soil_VWC_model$`F value`,"P-value"=anova_SG_soil_VWC_model$`Pr(>F)`)
+kable(df_anova_SG_soil_VWC_model,align = "c",digits = c(1,2,2,3), caption= "Soil VWC")
+```
+Graph for publication
+```{r echo=FALSE}
+combin_grav_moist_seed_trt_soil_root_precip_g=SG_inorg_N_trt %>% group_by(soil_root,precip)
+soil_grav_moist_out_trt=summarise_at(combin_grav_moist_seed_trt_soil_root_precip_g, 
+                                     "percent_soil_moisture_dry_weight", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+
+treatment_order=c("S.B","L.B","L.R")
+(combined_grav_soil_moist_p=ggplot(soil_grav_moist_out_trt, aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(position=position_dodge(width=0.9), width=0.2, size=1,aes(y=mean, ymin = mean-se, ymax= mean+se))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Gravimetric soil moisture (%)")+
+    geom_text(aes(y=2, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+ylim(c(0,22))+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+#### Percent Difference Drought v Ambient
+```{r echo=FALSE}
+
+SG_inorg_N_trt_AC_trt=SG_inorg_N_trt %>% group_by(precip) %>% summarise_at("percent_soil_moisture_dry_weight", list(~n(),~mean(.),sd,se=~sd(.)/sqrt(n())))
+
+((SG_inorg_N_trt_AC_trt[SG_inorg_N_trt_AC_trt$precip=="D",]$mean-SG_inorg_N_trt_AC_trt[SG_inorg_N_trt_AC_trt$precip=="A",]$mean)/SG_inorg_N_trt_AC_trt[SG_inorg_N_trt_AC_trt$precip=="A",]$mean)*100
+
+```
+
+
+# Start Soil nitrogen
+
+## Soil nitrate
+
+Diagnostic Graphs
+```{r}
+SG_start_inorg_N$soil_root=with(SG_start_inorg_N, interaction(soil_status,root_association))
+
+SG_Soil_nit_start= lm((ug_N_NO3_g_dry_soil)~soil_root+block, data= SG_start_inorg_N)
+qqPlot(resid(SG_Soil_nit_start))
+hist(resid(SG_Soil_nit_start))
+shapiro.test(resid(SG_Soil_nit_start))
+```
+Raw Statistical output
+```{r}
+Anova(SG_Soil_nit_start,type = 3)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_SG_Soil_nit_start=Anova(SG_Soil_nit_start,type = 3)
+df_Anova_SG_Soil_nit_start=data.frame(row.names =row.names(Anova_SG_Soil_nit_start),"Df"=Anova_SG_Soil_nit_start$Df,"F-value"=Anova_SG_Soil_nit_start$`F value`,"P-value"=Anova_SG_Soil_nit_start$`Pr(>F)`)
+kable(df_Anova_SG_Soil_nit_start,align = "c",digits = c(2,2,3), caption= "Soil Nitrate")
+```
+
+Graph for publication
+```{r echo=FALSE}
+SG_start_inorg_N_soil_root_g=SG_start_inorg_N %>% group_by(soil_root)
+soil_nit_START_trt=summarise_at(SG_start_inorg_N_soil_root_g, 
+                                "ug_N_NO3_g_dry_soil", list(~n(),~mean(.),sd,se=~sd(.)/sqrt(n())))
+treatment_order=c("S.B","L.B","L.R")
+(soil_nit_START_trt_p=ggplot(soil_nit_START_trt, aes(x=soil_root,y=mean, ymin = mean-se, ymax= mean+se,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+    geom_errorbar(position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,10.5))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=NULL, limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+ylab("Starting soil nitrate \n(ug per g soil)")+
+    geom_text(aes(y=.5, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+
+
+### Presence Start SOil nitrate
+
+
+Diagnostic Graphs
+```{r}
+SG_start_inorg_N_pres=subset(SG_start_inorg_N, root_association =="B")
+
+SG_Soil_nit_start_pres= lm((ug_N_NO3_g_dry_soil)~soil_root+block, data= SG_start_inorg_N_pres)
+qqPlot(resid(SG_Soil_nit_start_pres))
+hist(resid(SG_Soil_nit_start_pres))
+shapiro.test(resid(SG_Soil_nit_start_pres))
+```
+Raw Statistical output
+```{r}
+Anova(SG_Soil_nit_start_pres,type = 3)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_SG_Soil_nit_start_pres=Anova(SG_Soil_nit_start_pres,type = 3)
+df_Anova_SG_Soil_nit_start_pres=data.frame(row.names =row.names(Anova_SG_Soil_nit_start_pres),"Df"=Anova_SG_Soil_nit_start_pres$Df,"F-value"=Anova_SG_Soil_nit_start_pres$`F value`,"P-value"=Anova_SG_Soil_nit_start_pres$`Pr(>F)`)
+kable(df_Anova_SG_Soil_nit_start_pres,align = "c",digits = c(2,2,3), caption= "Soil Nitrate")
+```
+
+### Origin Start SOil nitrate####
+
+
+
+Diagnostic Graphs
+```{r}
+SG_start_inorg_N_orig=subset(SG_start_inorg_N, soil_status =="L")
+
+SG_Soil_nit_start_orig= lm((ug_N_NO3_g_dry_soil)^3~soil_root+block, data= SG_start_inorg_N_orig)
+qqPlot(resid(SG_Soil_nit_start_orig))
+hist(resid(SG_Soil_nit_start_orig))
+shapiro.test(resid(SG_Soil_nit_start_orig))
+boxCox(SG_Soil_nit_start_orig)
+```
+Raw Statistical output
+```{r}
+Anova(SG_Soil_nit_start_orig,type = 3)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_SG_Soil_nit_start_orig=Anova(SG_Soil_nit_start_orig,type = 3)
+df_Anova_SG_Soil_nit_start_orig=data.frame(row.names =row.names(Anova_SG_Soil_nit_start_orig),"Df"=Anova_SG_Soil_nit_start_orig$Df,"F-value"=Anova_SG_Soil_nit_start_orig$`F value`,"P-value"=Anova_SG_Soil_nit_start_orig$`Pr(>F)`)
+kable(df_Anova_SG_Soil_nit_start_orig,align = "c",digits = c(2,2,3), caption= "Soil Nitrate")
+```
+
+## Soil ammonium
+
+Diagnostic Graphs
+```{r}
+SG_start_inorg_N$soil_root=with(SG_start_inorg_N, interaction(soil_status,root_association))
+
+SG_Soil_amm_start= lm(log(ug_N_NH4_g_dry_soil)~soil_root+block, data= SG_start_inorg_N)
+qqPlot(resid(SG_Soil_amm_start))
+hist(resid(SG_Soil_amm_start))
+shapiro.test(resid(SG_Soil_amm_start))
+boxCox(SG_Soil_amm_start)
+```
+Raw Statistical output
+```{r}
+Anova(SG_Soil_amm_start,type = 3)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_SG_Soil_amm_start=Anova(SG_Soil_amm_start,type = 3)
+df_Anova_SG_Soil_amm_start=data.frame(row.names =row.names(Anova_SG_Soil_amm_start),"Df"=Anova_SG_Soil_amm_start$Df,"F-value"=Anova_SG_Soil_amm_start$`F value`,"P-value"=Anova_SG_Soil_amm_start$`Pr(>F)`)
+kable(df_Anova_SG_Soil_amm_start,align = "c",digits = c(2,2,3), caption= "Soil Ammonium")
+```
+
+Graph for publication
+```{r echo=FALSE}
+SG_start_inorg_N_soil_root_g=SG_start_inorg_N %>% group_by(soil_root)
+soil_amm_START_trt=summarise_at(SG_start_inorg_N_soil_root_g, 
+                                "ug_N_NH4_g_dry_soil", list(~n(),~mean(.),sd,se=~sd(.)/sqrt(n())))
+treatment_order=c("S.B","L.B","L.R")
+(soil_amm_START_trt_p=ggplot(soil_amm_START_trt, aes(x=soil_root,y=mean, ymin = mean-se, ymax= mean+se,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(fill=factor(soil_root,levels = treatment_order)))+
+    geom_errorbar(position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,35))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=NULL, limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order,name=NULL)+ylab("Starting soil ammonium \n(ug per g soil)")+
+    geom_text(aes(y=1.5, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+### Presence Start SOil Ammonium
+
+
+Diagnostic Graphs
+```{r}
+SG_start_inorg_N_pres=subset(SG_start_inorg_N, root_association =="B")
+
+SG_Soil_amm_start_pres= lm((ug_N_NH4_g_dry_soil)~soil_root+block, data= SG_start_inorg_N_pres)
+qqPlot(resid(SG_Soil_amm_start_pres))
+hist(resid(SG_Soil_amm_start_pres))
+shapiro.test(resid(SG_Soil_amm_start_pres))
+boxCox(SG_Soil_amm_start_pres)
+```
+Raw Statistical output
+```{r}
+Anova(SG_Soil_amm_start_pres,type = 3)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_SG_Soil_amm_start_pres=Anova(SG_Soil_amm_start_pres,type = 3)
+df_Anova_SG_Soil_amm_start_pres=data.frame(row.names =row.names(Anova_SG_Soil_amm_start_pres),"Df"=Anova_SG_Soil_amm_start_pres$Df,"F-value"=Anova_SG_Soil_amm_start_pres$`F value`,"P-value"=Anova_SG_Soil_amm_start_pres$`Pr(>F)`)
+kable(df_Anova_SG_Soil_amm_start_pres,align = "c",digits = c(2,2,3), caption= "Soil Ammonium")
+```
+
+### Origin Start SOil Ammonium####
+
+
+
+Diagnostic Graphs
+```{r}
+SG_start_inorg_N_orig=subset(SG_start_inorg_N, soil_status =="L")
+
+SG_Soil_amm_start_orig= lm((ug_N_NH4_g_dry_soil)^-1~soil_root+block, data= SG_start_inorg_N_orig)
+qqPlot(resid(SG_Soil_amm_start_orig))
+hist(resid(SG_Soil_amm_start_orig))
+shapiro.test(resid(SG_Soil_amm_start_orig))
+boxCox(SG_Soil_amm_start_orig)
+```
+Raw Statistical output
+```{r}
+Anova(SG_Soil_amm_start_orig,type = 3)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_SG_Soil_amm_start_orig=Anova(SG_Soil_amm_start_orig,type = 3)
+df_Anova_SG_Soil_amm_start_orig=data.frame(row.names =row.names(Anova_SG_Soil_amm_start_orig),"Df"=Anova_SG_Soil_amm_start_orig$Df,"F-value"=Anova_SG_Soil_amm_start_orig$`F value`,"P-value"=Anova_SG_Soil_amm_start_orig$`Pr(>F)`)
+kable(df_Anova_SG_Soil_amm_start_orig,align = "c",digits = c(2,2,3), caption= "Soil Ammonium")
+```
+
+
+
+
+## Total organic carbon
+
+```{r include=FALSE}
+SG_trt <- read.csv("D:/MERDS_2018/merds/Switchgrass/R_data/SG_trt_sheet.csv")
+head(SG_trt)
+SG_MBC_DOC <- read.csv("D:/MERDS_2018/merds/Switchgrass/R_data/SG_analyzed_MBC_DOC.csv")
+head(SG_MBC_DOC)
+
+
+SG_MBC_DOC_trt=merge(SG_MBC_DOC,SG_trt, by="Plant_Number",all.x = T)
+SG_MBC_DOC_trt$soil_root=with(SG_MBC_DOC_trt, interaction(soil_status,root_association))
+summary(SG_MBC_DOC_trt)
+```
+
+Diagnostic Graphs
+```{r}
+
+SG_Soil_DOC_mod= lm(log(unfumigated_DOC_concentration_ugC_gsoil)~soil_root+block, data= SG_MBC_DOC_trt)
+qqPlot(resid(SG_Soil_DOC_mod))
+hist(resid(SG_Soil_DOC_mod))
+shapiro.test(resid(SG_Soil_DOC_mod))
+boxCox(SG_Soil_DOC_mod)
+
+```
+Raw Statistical output
+```{r}
+Anova(SG_Soil_DOC_mod,type = 3)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_SG_Soil_DOC_mod=Anova(SG_Soil_DOC_mod,type = 3)
+df_Anova_SG_Soil_DOC_mod=data.frame(row.names =row.names(Anova_SG_Soil_DOC_mod),"Df"=Anova_SG_Soil_DOC_mod$Df,"F-value"=Anova_SG_Soil_DOC_mod$`F value`,"P-value"=Anova_SG_Soil_DOC_mod$`Pr(>F)`)
+kable(df_Anova_SG_Soil_DOC_mod,align = "c",digits = c(2,2,3), caption= "Dissolved organic carbon")
+```
+Graph for publication
+```{r echo=FALSE}
+soil_DOC_trt_SUM=SG_MBC_DOC_trt %>% group_by(soil_root,precip)%>%summarise_at(
+                                         "unfumigated_DOC_concentration_ugC_gsoil", list(~n(),~mean(.),sd,se=~sd(.)/sqrt(n())))
+treatment_order=c("S.B","L.B","L.R")
+(soil_DOC_trt_p=ggplot(soil_DOC_trt_SUM, aes(x=factor(soil_root,levels = treatment_order),fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(y=mean))+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+
+    scale_fill_manual(values = c( "white","light gray", "dark grey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Sterile","Bulk","Rhizo"), name=NULL)+ylab("Dissolved organic carbon (µg/g dry soil)")+
+    geom_text(aes(y=3, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position ="none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+## Microbial Biomass
+
+Diagnostic Graphs
+```{r}
+SG_Soil_MBC_mod= lm((ugC_MicBiomass_g_dry_soil)~soil_root+block, 
+                    data= SG_MBC_DOC_trt)
+qqPlot(resid(SG_Soil_MBC_mod))
+hist(resid(SG_Soil_MBC_mod))
+shapiro.test(resid(SG_Soil_MBC_mod))
+```
+
+Raw Statistical output
+```{r}
+Anova(SG_Soil_MBC_mod, type=3)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_SG_Soil_MBC_mod=Anova(SG_Soil_MBC_mod,type = 3)
+df_Anova_SG_Soil_MBC_mod=data.frame(row.names =row.names(Anova_SG_Soil_MBC_mod),"Df"=Anova_SG_Soil_MBC_mod$Df,"F-value"=Anova_SG_Soil_MBC_mod$`F value`,"P-value"=Anova_SG_Soil_MBC_mod$`Pr(>F)`)
+kable(df_Anova_SG_Soil_MBC_mod,align = "c",digits = c(2,2,3), caption= "Microbial biomass carbon")
+```
+
+Graph for publication
+```{r echo=FALSE}
+soil_MBC_trt_SUM=SG_MBC_DOC_trt %>% group_by(soil_root,precip)%>%summarise_at(
+  "ugC_MicBiomass_g_dry_soil", list(~n(),~mean(.),sd,se=~sd(.)/sqrt(n())))
+treatment_order=c("S.B","L.B","L.R")
+(soil_DOC_trt_p=ggplot(soil_MBC_trt_SUM, aes(x=factor(soil_root,levels = treatment_order),fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(position="dodge",stat="identity", color="black",aes(y=mean))+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+
+    scale_fill_manual(values = c( "white","light gray", "dark grey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Sterile","Bulk","Rhizo"), name=NULL)+ylab("Microbial biomass carbon (µg/g dry soil)")+
+    geom_text(aes(y=20, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position ="none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+# Combined Seed and Seedling Analyses
+
+
+## Survival
+```{r include=FALSE}
+#Germinant survival 
+summary(fin_dataSG_biomass_seed_surv_trt_w_germ)
+#Seedling survival
+summary(data_SG_biomass_trans_surv_trt)
+
+#truncate the dataset for Rbind
+fin_dataSG_biomass_seed_surv_trt_w_germ_trunc=data.frame(fin_dataSG_biomass_seed_surv_trt_w_germ[,c("Plant_Number","surv_germ","precip","block","soil_root","root_association","soil_status")],"life_stage"=rep("germinant"))
+colnames(fin_dataSG_biomass_seed_surv_trt_w_germ_trunc)[2]="surv"
+data_SG_biomass_trans_surv_trt_trunc=data.frame(data_SG_biomass_trans_surv_trt[,c("Plant_Number","surv","precip","block","soil_root","root_association","soil_status")],"life_stage"=rep("seedling"))
+
+data_SG_biomass_surv_trt_comb=rbind(fin_dataSG_biomass_seed_surv_trt_w_germ_trunc,data_SG_biomass_trans_surv_trt_trunc)
+nrow(data_SG_biomass_surv_trt_comb)
+#149
+```
+
+Diagnostic Graphs
+```{r}
+#data_SG_biomass_trans_surv_drought=subset(data_SG_biomass_trans_surv_trt, precip=="D")
+SG_combin_surv_model= glmer(surv~soil_root*precip*life_stage+(1|block/life_stage), data= data_SG_biomass_surv_trt_comb, family = binomial)
+qqPlot(resid(SG_combin_surv_model))
+hist(resid(SG_combin_surv_model))
+shapiro.test(resid(SG_combin_surv_model))
+```
+Raw Statistical output
+```{r}
+Anova(SG_combin_surv_model,type = 3)
+emmeans(SG_combin_surv_model, pairwise~soil_root)
+
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_SG_combin_surv_model=Anova(SG_combin_surv_model,type = 3)
+Anova_SG_combin_surv_model=data.frame(row.names =row.names(Anova_SG_combin_surv_model),"Df"=Anova_SG_combin_surv_model$Df,"Chi-Sq"=Anova_SG_combin_surv_model$Chisq,"P-value"=Anova_SG_combin_surv_model$`Pr(>Chisq)`)
+kable(Anova_SG_combin_surv_model,align = "c",digits = c(2,2,3), caption= "Survival")
+```
+
+### Focus in on Drought treatment
+
+
+Diagnostic Graphs
+```{r}
+data_SG_biomass_surv_trt_comb_drought=subset(data_SG_biomass_surv_trt_comb, precip=="D")
+SG_combin_surv_drought_model= glmer(surv~soil_root*life_stage+(1|block/life_stage), data= data_SG_biomass_surv_trt_comb_drought, family = binomial)
+qqPlot(resid(SG_combin_surv_drought_model))
+hist(resid(SG_combin_surv_drought_model))
+shapiro.test(resid(SG_combin_surv_drought_model))
+```
+Raw Statistical output
+```{r}
+Anova(SG_combin_surv_drought_model,type = 3)
+emmeans(SG_combin_surv_drought_model, pairwise~soil_root)
+
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_SG_combin_surv_drought_model=Anova(SG_combin_surv_drought_model,type = 3)
+Anova_SG_combin_surv_drought_model=data.frame(row.names =row.names(Anova_SG_combin_surv_drought_model),"Df"=Anova_SG_combin_surv_drought_model$Df,"Chi-Sq"=Anova_SG_combin_surv_drought_model$Chisq,"P-value"=Anova_SG_combin_surv_drought_model$`Pr(>Chisq)`)
+kable(Anova_SG_combin_surv_drought_model,align = "c",digits = c(2,2,3), caption= "Survival")
+```
+### Presence combined survival
+Diagnostic Graphs
+```{r}
+data_SG_biomass_surv_trt_comb_drought_pres=subset(data_SG_biomass_surv_trt_comb_drought, root_association =="B")
+SG_combin_surv_drought_pres_model= glmer(surv~soil_root*life_stage+(1|block/life_stage), data= data_SG_biomass_surv_trt_comb_drought_pres, family = binomial)
+qqPlot(resid(SG_combin_surv_drought_pres_model))
+hist(resid(SG_combin_surv_drought_pres_model))
+shapiro.test(resid(SG_combin_surv_drought_pres_model))
+```
+Raw Statistical output
+```{r}
+Anova(SG_combin_surv_drought_pres_model,type = 3)
+emmeans(SG_combin_surv_drought_pres_model, pairwise~soil_root)
+
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_SG_combin_surv_drought_pres_model=Anova(SG_combin_surv_drought_pres_model,type = 3)
+Anova_SG_combin_surv_drought_pres_model=data.frame(row.names =row.names(Anova_SG_combin_surv_drought_pres_model),"Df"=Anova_SG_combin_surv_drought_pres_model$Df,"Chi-Sq"=Anova_SG_combin_surv_drought_pres_model$Chisq,"P-value"=Anova_SG_combin_surv_drought_pres_model$`Pr(>Chisq)`)
+kable(Anova_SG_combin_surv_drought_pres_model,align = "c",digits = c(2,2,3), caption= "Survival")
+```
+
+
+### Origin combined survival
+Diagnostic Graphs
+```{r}
+data_SG_biomass_surv_trt_comb_drought_orig=subset(data_SG_biomass_surv_trt_comb_drought, soil_status =="L")
+SG_combin_surv_drought_orig_model= glmer(surv~soil_root*life_stage+(1|block/life_stage), data= data_SG_biomass_surv_trt_comb_drought_orig, family = binomial)
+qqPlot(resid(SG_combin_surv_drought_orig_model))
+hist(resid(SG_combin_surv_drought_orig_model))
+shapiro.test(resid(SG_combin_surv_drought_orig_model))
+```
+Raw Statistical output
+```{r}
+Anova(SG_combin_surv_drought_orig_model,type = 3)
+emmeans(SG_combin_surv_drought_orig_model, pairwise~soil_root)
+
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+Anova_SG_combin_surv_drought_orig_model=Anova(SG_combin_surv_drought_orig_model,type = 3)
+Anova_SG_combin_surv_drought_orig_model=data.frame(row.names =row.names(Anova_SG_combin_surv_drought_orig_model),"Df"=Anova_SG_combin_surv_drought_orig_model$Df,"Chi-Sq"=Anova_SG_combin_surv_drought_orig_model$Chisq,"P-value"=Anova_SG_combin_surv_drought_orig_model$`Pr(>Chisq)`)
+kable(Anova_SG_combin_surv_drought_orig_model,align = "c",digits = c(2,2,3), caption= "Survival")
+```
+
+## Biomass 
+
+```{r include=FALSE}
+#Germinant biomass 
+summary(fin_dataSG_biomass_seed_surv_trt_given_germ)
+#Seedling biomass
+summary(data_SG_biomass_trans_surv_trt)
+
+#truncate the dataset for Rbind
+fin_dataSG_biomass_seed_surv_trt_given_germ_trunc=data.frame(fin_dataSG_biomass_seed_surv_trt_given_germ[,c("Plant_Number","total_biomass","precip","block","soil_root","root_association","soil_status")],"life_stage"=rep("germinant"))
+
+data_SG_biomass_trans_surv_trt_trunc=data.frame(data_SG_biomass_trans_surv_trt[,c("Plant_Number","total_biomass_0","precip","block","soil_root","root_association","soil_status")],"life_stage"=rep("seedling"))
+colnames(data_SG_biomass_trans_surv_trt_trunc)[2]="total_biomass"
+data_SG_biomass_trt_comb=rbind(fin_dataSG_biomass_seed_surv_trt_given_germ_trunc,data_SG_biomass_trans_surv_trt_trunc)
+nrow(data_SG_biomass_trt_comb)
+#135
+summary(data_SG_biomass_trt_comb)
+```
+
+Diagnostic Graphs
+```{r}
+
+SG_combin_biomass_model= lmer(log(total_biomass+0.001)~soil_root*precip*life_stage+(1|block/life_stage), data= data_SG_biomass_trt_comb)
+qqPlot(resid(SG_combin_biomass_model))
+hist(resid(SG_combin_biomass_model))
+shapiro.test(resid(SG_combin_biomass_model))
+```
+Raw Statistical output
+```{r}
+anova(SG_combin_biomass_model)
+emmeans(SG_combin_biomass_model, pairwise~soil_root)
+emmeans(SG_combin_biomass_model, pairwise~life_stage)
+emmeans(SG_combin_biomass_model, pairwise~precip*life_stage)
+emmeans(SG_combin_biomass_model, pairwise~life_stage|soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SG_combin_biomass_model=anova(SG_combin_biomass_model)
+df_anova_SG_combin_biomass_model=data.frame(row.names = row.names(anova_SG_combin_biomass_model),"Df"=anova_SG_combin_biomass_model$NumDF,"Resid Df"=anova_SG_combin_biomass_model$DenDF,"F-value"=anova_SG_combin_biomass_model$`F value`,"P-value"=anova_SG_combin_biomass_model$`Pr(>F)`)
+kable(df_anova_SG_combin_biomass_model,align = "c",digits = c(1,2,2,3), caption= "Total biomass")
+```
+### Presence Combined Biomass
+
+Diagnostic Graphs
+```{r}
+data_SG_biomass_trt_comb_pres=subset(data_SG_biomass_trt_comb, root_association =="B")
+SG_combin_biomass_pres_model= lmer(log(total_biomass+0.001)~soil_root*precip*life_stage+(1|block/life_stage), data= data_SG_biomass_trt_comb_pres)
+qqPlot(resid(SG_combin_biomass_pres_model))
+hist(resid(SG_combin_biomass_pres_model))
+shapiro.test(resid(SG_combin_biomass_pres_model))
+```
+Raw Statistical output
+```{r}
+anova(SG_combin_biomass_pres_model)
+emmeans(SG_combin_biomass_pres_model, pairwise~soil_root)
+emmeans(SG_combin_biomass_pres_model, pairwise~precip*life_stage)
+emmeans(SG_combin_biomass_pres_model, pairwise~life_stage|soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SG_combin_biomass_pres_model=anova(SG_combin_biomass_pres_model)
+df_anova_SG_combin_biomass_pres_model=data.frame(row.names = row.names(anova_SG_combin_biomass_pres_model),"Df"=anova_SG_combin_biomass_pres_model$NumDF,"Resid Df"=anova_SG_combin_biomass_pres_model$DenDF,"F-value"=anova_SG_combin_biomass_pres_model$`F value`,"P-value"=anova_SG_combin_biomass_pres_model$`Pr(>F)`)
+kable(df_anova_SG_combin_biomass_pres_model,align = "c",digits = c(1,2,2,3), caption= "Total biomass")
+```
+
+### Origin Combined Biomass
+
+Diagnostic Graphs
+```{r}
+data_SG_biomass_trt_comb_orig=subset(data_SG_biomass_trt_comb, soil_status =="L")
+SG_combin_biomass_orig_model= lmer(log(total_biomass+0.001)~soil_root*precip*life_stage+(1|block/life_stage), data= data_SG_biomass_trt_comb_orig)
+qqPlot(resid(SG_combin_biomass_orig_model))
+hist(resid(SG_combin_biomass_orig_model))
+shapiro.test(resid(SG_combin_biomass_orig_model))
+```
+Raw Statistical output
+```{r}
+anova(SG_combin_biomass_orig_model)
+emmeans(SG_combin_biomass_orig_model, pairwise~precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SG_combin_biomass_orig_model=anova(SG_combin_biomass_orig_model)
+df_anova_SG_combin_biomass_orig_model=data.frame(row.names = row.names(anova_SG_combin_biomass_orig_model),"Df"=anova_SG_combin_biomass_orig_model$NumDF,"Resid Df"=anova_SG_combin_biomass_orig_model$DenDF,"F-value"=anova_SG_combin_biomass_orig_model$`F value`,"P-value"=anova_SG_combin_biomass_orig_model$`Pr(>F)`)
+kable(df_anova_SG_combin_biomass_orig_model,align = "c",digits = c(1,2,2,3), caption= "Total biomass")
+```
+
+
+## Root:shoot ratio 
+
+```{r include=FALSE}
+#Germinant biomass 
+summary(fin_dataSG_biomass_seed_surv_trt_given_germ)
+#Seedling biomass
+summary(data_SG_biomass_trans_surv_trt)
+data_SG_biomass_trans_surv_trt$root_shoot=data_SG_biomass_trans_surv_trt$root_weight_g_0/data_SG_biomass_trans_surv_trt$shoot_weight_g_0
+#truncate the dataset for Rbind
+fin_dataSG_root_shoot_seed_surv_trt_given_germ_trunc=data.frame(fin_dataSG_biomass_seed_surv_trt_given_germ[,c("Plant_Number","root_shoot","precip","block","soil_root","root_association","soil_status")],"life_stage"=rep("germinant"))
+
+data_SG_root_shoot_trans_surv_trt_trunc=data.frame(data_SG_biomass_trans_surv_trt[,c("Plant_Number","root_shoot","precip","block","soil_root","root_association","soil_status")],"life_stage"=rep("seedling"))
+
+data_SG_root_shoot_trt_comb=rbind(fin_dataSG_root_shoot_seed_surv_trt_given_germ_trunc,data_SG_root_shoot_trans_surv_trt_trunc)
+nrow(data_SG_root_shoot_trt_comb)
+#135
+summary(data_SG_root_shoot_trt_comb)
+```
+
+Diagnostic Graphs
+```{r}
+
+SG_combin_root_shoot_model= lmer(log(root_shoot+0.001)~soil_root*precip*life_stage+(1|block/life_stage), data= data_SG_root_shoot_trt_comb)
+qqPlot(resid(SG_combin_root_shoot_model))
+hist(resid(SG_combin_root_shoot_model))
+shapiro.test(resid(SG_combin_root_shoot_model))
+```
+Raw Statistical output
+```{r}
+anova(SG_combin_root_shoot_model)
+emmeans(SG_combin_root_shoot_model, pairwise~life_stage)
+emmeans(SG_combin_root_shoot_model, pairwise~life_stage|soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SG_combin_root_shoot_model=anova(SG_combin_root_shoot_model)
+df_anova_SG_combin_root_shoot_model=data.frame(row.names = row.names(anova_SG_combin_root_shoot_model),"Df"=anova_SG_combin_root_shoot_model$NumDF,"Resid Df"=anova_SG_combin_root_shoot_model$DenDF,"F-value"=anova_SG_combin_root_shoot_model$`F value`,"P-value"=anova_SG_combin_root_shoot_model$`Pr(>F)`)
+kable(df_anova_SG_combin_root_shoot_model,align = "c",digits = c(1,2,2,3), caption= "Root:Shoot")
+```
+### Presence Combined Root:Shoot
+
+Diagnostic Graphs
+```{r}
+data_SG_root_shoot_trt_comb_pres=subset(data_SG_root_shoot_trt_comb, root_association =="B")
+SG_combin_root_shoot_pres_model= lmer(sqrt(root_shoot)~soil_root*precip*life_stage+(1|block/life_stage), data= data_SG_root_shoot_trt_comb_pres)
+qqPlot(resid(SG_combin_root_shoot_pres_model))
+hist(resid(SG_combin_root_shoot_pres_model))
+shapiro.test(resid(SG_combin_root_shoot_pres_model))
+```
+Raw Statistical output
+```{r}
+anova(SG_combin_root_shoot_pres_model)
+
+emmeans(SG_combin_root_shoot_pres_model, pairwise~precip*life_stage)
+emmeans(SG_combin_root_shoot_pres_model, pairwise~life_stage|soil_root|precip)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SG_combin_root_shoot_pres_model=anova(SG_combin_root_shoot_pres_model)
+df_anova_SG_combin_root_shoot_pres_model=data.frame(row.names = row.names(anova_SG_combin_root_shoot_pres_model),"Df"=anova_SG_combin_root_shoot_pres_model$NumDF,"Resid Df"=anova_SG_combin_root_shoot_pres_model$DenDF,"F-value"=anova_SG_combin_root_shoot_pres_model$`F value`,"P-value"=anova_SG_combin_root_shoot_pres_model$`Pr(>F)`)
+kable(df_anova_SG_combin_root_shoot_pres_model,align = "c",digits = c(1,2,2,3), caption= "Total biomass")
+```
+
+### Origin Combined Root:Shoot
+
+Diagnostic Graphs
+```{r}
+data_SG_root_shoot_trt_comb_orig=subset(data_SG_root_shoot_trt_comb, soil_status =="L")
+SG_combin_root_shoot_orig_model= lmer(log(root_shoot+0.001)~soil_root*precip*life_stage+(1|block/life_stage), data= data_SG_root_shoot_trt_comb_orig)
+qqPlot(resid(SG_combin_root_shoot_orig_model))
+hist(resid(SG_combin_root_shoot_orig_model))
+shapiro.test(resid(SG_combin_root_shoot_orig_model))
+```
+Raw Statistical output
+```{r}
+anova(SG_combin_root_shoot_orig_model)
+emmeans(SG_combin_root_shoot_orig_model, pairwise~life_stage)
+```
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_SG_combin_root_shoot_orig_model=anova(SG_combin_root_shoot_orig_model)
+df_anova_SG_combin_root_shoot_orig_model=data.frame(row.names = row.names(anova_SG_combin_root_shoot_orig_model),"Df"=anova_SG_combin_root_shoot_orig_model$NumDF,"Resid Df"=anova_SG_combin_root_shoot_orig_model$DenDF,"F-value"=anova_SG_combin_root_shoot_orig_model$`F value`,"P-value"=anova_SG_combin_root_shoot_orig_model$`Pr(>F)`)
+kable(df_anova_SG_combin_root_shoot_orig_model,align = "c",digits = c(1,2,2,3), caption= "Total biomass")
+```
