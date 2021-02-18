@@ -1,0 +1,1692 @@
+---
+title: "MERDs Bacterial Community Analyses"
+author: "Lukas Bell-Dereske"
+date: "9/1/2020"
+output:
+  word_document: default
+  html_document: default
+---
+Here is the Code for analyzing the bacterial community composition of MERDS Switchgrass Experiment
+Lukas (belldere@msu.edu) processed the sequences and subset the larger run to only have samples from MERDS (MERDs 56 of 317 samples in the run)
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(phyloseq)
+library(ggplot2)
+library(ggrepel)
+library(dplyr)
+library(gridExtra)
+library(car)
+library(emmeans)
+library(vegan)
+library(ggpubr)
+library(otuSummary)
+library(stringr)
+library(knitr)
+library(lmerTest)
+library(reshape2)
+options(contrasts=c("contr.sum", "contr.poly"))
+```
+
+# Begin OTU based community
+
+```{r include=FALSE}
+##### Initial sample processing
+
+#Load in the phyloseq object created from a run with multiple projects
+#This data has not been processed beyond creation of a phyloseq object with OTU table, SILVA v123 taxa, phylogenetic tree, and Sample metadata. 
+load("D:/MERDS_2018/merds/Switchgrass/R_data/phyl_obj_SILVA_MERDS.RData")
+
+#Root the tree to a random node
+phy_tree(phyl_SILVA_MERDS)<-ape::root(phy_tree(phyl_SILVA_MERDS), "OTU3039", resolve.root=TRUE)
+ntaxa(phyl_SILVA_MERDS)
+#11892
+sum(taxa_sums(phyl_SILVA_MERDS))
+#980588
+mean(sample_sums(phyl_SILVA_MERDS))
+#17510.5
+min(sample_sums(phyl_SILVA_MERDS))
+#242
+max(sample_sums(phyl_SILVA_MERDS))
+#30633
+sort(sample_sums(phyl_SILVA_MERDS))
+#  MERDSSG42  MERDSSG85
+#       242      10703
+
+#Prune out Non bacteria and archaea 
+get_taxa_unique(phyl_SILVA_MERDS, taxonomic.rank = "Domain")
+SILVA_MERDS_data<-subset_taxa(phyl_SILVA_MERDS,Domain!="")
+ntaxa(SILVA_MERDS_data)
+#11887
+sum(taxa_sums(SILVA_MERDS_data))
+#980577
+get_taxa_unique(SILVA_MERDS_data, taxonomic.rank = "Domain")
+SILVA_MERDS_data<-subset_taxa(SILVA_MERDS_data,Class!="c:Chloroplast")
+ntaxa(SILVA_MERDS_data)
+#11797
+sum(otu_table(SILVA_MERDS_data))
+#978323
+
+SILVA_MERDS_data<-subset_taxa(SILVA_MERDS_data,Family!="f:Mitochondria")
+ntaxa(SILVA_MERDS_data)
+#11774
+sum(otu_table(SILVA_MERDS_data))
+#977652
+sort(sample_sums(SILVA_MERDS_data))
+# MERDSSG42  MERDSSG85 MERDSSG103
+#       242      10694      11490
+
+#remove sample with 239 read
+SILVA_MERDS_trunc=prune_samples(sample_sums(SILVA_MERDS_data) > 10000, SILVA_MERDS_data)
+nrow(sample_data(SILVA_MERDS_trunc))
+#55
+
+SILVA_MERDS_trunc3=prune_taxa(taxa_sums(SILVA_MERDS_trunc) > 2, SILVA_MERDS_trunc)
+ntaxa(SILVA_MERDS_trunc3)
+#8864
+sum(otu_table(SILVA_MERDS_trunc3))
+#972894
+
+#Let's rarefy the data
+#SILVA_MERDS_rar=rarefy_even_depth(SILVA_MERDS_trunc3, sample.size= 10000, rngseed = T)
+#498OTUs were removed because they are no longer 
+#present in any sample after random subsampling
+
+#save(SILVA_MERDS_rar, file = "D:/MERDS_2018/merds/Switchgrass/R_data/SILVA_MERDS_rar_phylo_obj.RData")
+load("D:/MERDS_2018/merds/Switchgrass/R_data/SILVA_MERDS_rar_phylo_obj.RData")
+
+```
+
+## Change from initial soil community
+
+```{r include=FALSE}
+SILVA_MERDS_rar_map=sample_data(SILVA_MERDS_rar)
+head(SILVA_MERDS_rar_map)
+SILVA_MERDS_rar_WU_dis=distance(SILVA_MERDS_rar,method = "wunifrac")
+SILVA_MERDS_rar_WU_dis_M <- matrixConvert(SILVA_MERDS_rar_WU_dis, 
+                                          colname = c("sample1", "sample2", "w_unifrac"))
+
+head(SILVA_MERDS_rar_WU_dis_M)
+nrow(SILVA_MERDS_rar_WU_dis_M)
+#1485
+SILVA_MERDS_rar_WU_dis_M$s1_s2=with(SILVA_MERDS_rar_WU_dis_M, interaction(sample1,sample2))
+
+SILVA_MERDS_rar_WU_dis_trt0=merge(SILVA_MERDS_rar_WU_dis_M,SILVA_MERDS_rar_map[,c("soil_status","root_association","block",
+                                                                                  "precip","life_stage","soil_root")], 
+                                  by.x = "sample1",by.y = "row.names")
+nrow(SILVA_MERDS_rar_WU_dis_trt0)
+#1485
+colnames(SILVA_MERDS_rar_WU_dis_trt0)[5:10]=c("s1_soil_status","s1_root_association","s1_block",
+                                              "s1_precip","s1_life_stage","s1_soil_root")
+
+
+
+SILVA_MERDS_rar_WU_dis_trt=merge(SILVA_MERDS_rar_WU_dis_trt0,SILVA_MERDS_rar_map[,c("soil_status","root_association","block",
+                                                                                    "precip","life_stage","soil_root")], 
+                                 by.x = "sample2",by.y = "row.names")
+
+
+nrow(SILVA_MERDS_rar_WU_dis_trt)
+#1485
+colnames(SILVA_MERDS_rar_WU_dis_trt)[11:16]=c("s2_soil_status","s2_root_association","s2_block",
+                                              "s2_precip","s2_life_stage","s2_soil_root")
+
+SILVA_MERDS_rar_WU_dis_trt$s1_s2_life_stage=with(SILVA_MERDS_rar_WU_dis_trt, interaction(s1_life_stage,s2_life_stage))
+unique(SILVA_MERDS_rar_WU_dis_trt$s1_s2_life_stage)
+
+SILVA_MERDS_rar_WU_dis_trt$s1_s2_root_association=with(SILVA_MERDS_rar_WU_dis_trt, interaction(s1_root_association,s2_root_association))
+unique(SILVA_MERDS_rar_WU_dis_trt$s1_s2_root_association)
+
+SILVA_MERDS_rar_WU_dis_trt$s1_s2_block=with(SILVA_MERDS_rar_WU_dis_trt, interaction(s1_block,s2_block))
+unique(SILVA_MERDS_rar_WU_dis_trt$s1_s2_block)
+
+SILVA_MERDS_rar_WU_dis_trt$time=ifelse(SILVA_MERDS_rar_WU_dis_trt$s1_s2_life_stage=="Start.Start","Start","End")
+
+unique(SILVA_MERDS_rar_WU_dis_trt$s2_life_stage)
+SILVA_MERDS_rar_WU_dis_start=subset(SILVA_MERDS_rar_WU_dis_trt,s1_s2_life_stage=="S.Start"|
+                                      s1_s2_life_stage=="G.Start"|s1_s2_life_stage=="Start.Start")
+nrow(SILVA_MERDS_rar_WU_dis_start)
+#404
+unique(SILVA_MERDS_rar_WU_dis_start$s1_life_stage)
+unique(SILVA_MERDS_rar_WU_dis_start$s2_life_stage)
+
+SILVA_MERDS_rar_WU_dis_start %>% group_by(time,s1_soil_root,s1_life_stage,s1_root_association,
+                                          s2_root_association) %>% summarise_at(vars(w_unifrac),c(~mean(.),~n()))
+
+SILVA_MERDS_rar_WU_dis_start_wi=subset(SILVA_MERDS_rar_WU_dis_start,s1_s2_root_association=="B.B"|
+                                         s1_s2_root_association=="R.R")
+
+nrow(SILVA_MERDS_rar_WU_dis_start_wi)
+#200
+unique(SILVA_MERDS_rar_WU_dis_start$s1_block)
+
+SILVA_MERDS_rar_WU_dis_start_wi_bl=subset(SILVA_MERDS_rar_WU_dis_start_wi,time=="Start"|s1_s2_block=="2.2"|
+                                            s1_s2_block=="3.3"|s1_s2_block=="4.4"|s1_s2_block=="5.5")
+nrow(SILVA_MERDS_rar_WU_dis_start_wi_bl)
+#59
+
+
+head(SILVA_MERDS_rar_WU_dis_start_wi_bl)
+unique(SILVA_MERDS_rar_WU_dis_start_wi_bl$s1_s2_life_stage)
+
+```
+
+#### Transplant Experimental Distance from start community seedling
+
+##### Graph for publication
+```{r echo=FALSE}
+SILVA_MERDS_rar_WU_dis_start_wi_bl_trans_exp=subset(SILVA_MERDS_rar_WU_dis_start_wi_bl,s1_s2_life_stage!="S.Start"&s1_s2_life_stage!="Start.Start")
+nrow(SILVA_MERDS_rar_WU_dis_start_wi_bl_trans_exp)
+#24
+unique(SILVA_MERDS_rar_WU_dis_start_wi_bl_trans_exp$s1_life_stage)
+
+trans_WU_intercept_exp=SILVA_MERDS_rar_WU_dis_start_wi_bl_trans_exp %>% group_by(s1_soil_root,s1_precip) %>% 
+  summarise_at(vars(w_unifrac),c(~mean(.),~n(),se=~sd(.)/sqrt(n())))
+unique(SILVA_MERDS_rar_WU_dis_start_wi_bl_trans_exp$s1_soil_root)
+unique(SILVA_MERDS_rar_WU_dis_start_wi_bl_trans_exp$s1_precip)
+
+(dream_comm_turnover_dot_error_p=ggplot(SILVA_MERDS_rar_WU_dis_start_wi_bl_trans_exp)+
+  geom_errorbar(data = trans_WU_intercept_exp,aes(group=factor(s1_soil_root,levels = c("S.B","L.B","L.R")),
+                                                  x=factor(s1_precip, levels = c("A","D")),y=mean,ymin=mean-se,ymax=mean+se),
+                width=.3,size=1, position = position_dodge(0.5), color="black")+
+  geom_point(aes(x=factor(s1_precip, levels = c("A","D")),y=w_unifrac,fill=s1_precip, 
+                 shape=factor(s1_soil_root,levels = c("S.B","L.B","L.R"))), size=3, position = position_dodge(0.5))+
+  geom_point(data = trans_WU_intercept_exp,aes(x=factor(s1_precip, levels = c("A","D")),y=mean,fill=s1_precip, 
+                                               shape=factor(s1_soil_root,levels = c("S.B","L.B","L.R"))), size=7, position = position_dodge(0.5),stroke=1.5)+
+  scale_y_continuous(name =str_wrap("Distance from initial soil (Weighted Unifrac distance)",width = 30))+
+  scale_x_discrete(label=c("Ambient","Drought"))+
+  scale_shape_manual(values= c(23,21,24),name=NULL)+scale_fill_manual(values = c("cyan3","Red1"))+
+  theme_bw()+theme(axis.text = element_text(size = 18),axis.title.x = element_blank(), axis.title.y = element_text(size = 22),
+                   legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+#900x750
+#ggsave("D:/MERDS_2018/merds/Switchgrass/R_fig/trans_dream_comm_w_sterile_turnover_dot_error.svg",dream_comm_turnover_dot_error_p,width =11,height = 8,device="svg")
+```
+#### Presence Distance from start community seedling
+Diagnostic Graphs
+```{r}
+SILVA_MERDS_rar_WU_dis_wi_bl_trans_pres=subset(SILVA_MERDS_rar_WU_dis_start_wi_bl_trans_exp,time!="Start"&s1_soil_root!="L.R")
+
+nrow(SILVA_MERDS_rar_WU_dis_wi_bl_trans_pres)
+#16
+
+
+WU_pair_trans_mod_pres= lmer(w_unifrac~s1_soil_root*s1_precip+(1|sample2), data= SILVA_MERDS_rar_WU_dis_wi_bl_trans_pres)
+qqPlot(resid(WU_pair_trans_mod_pres))
+hist(resid(WU_pair_trans_mod_pres))
+shapiro.test(resid(WU_pair_trans_mod_pres))
+#0.535
+```
+
+Raw Statistical output
+
+```{r}
+anova(WU_pair_trans_mod_pres, type=3)
+emmeans(WU_pair_trans_mod_pres, pairwise~s1_soil_root|s1_precip)
+
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_WU_pair_trans_mod_pres=anova(WU_pair_trans_mod_pres)
+df_anova_WU_pair_trans_mod_pres=data.frame(row.names =row.names(anova_WU_pair_trans_mod_pres),"Df"=anova_WU_pair_trans_mod_pres$NumDF,"Resid Df"=anova_WU_pair_trans_mod_pres$DenDF,"F-value"=anova_WU_pair_trans_mod_pres$`F value`,"P-value"=anova_WU_pair_trans_mod_pres$`Pr(>F)`)
+kable(df_anova_WU_pair_trans_mod_pres,align = "c",digits = c(1,2,2,3), caption= "Trans Distance to initial soil communtiy")
+```
+
+#### Origin Distance from start community seedling
+
+
+##### Graph for publication
+```{r echo=FALSE}
+SILVA_MERDS_rar_WU_dis_start_wi_bl_trans=subset(SILVA_MERDS_rar_WU_dis_start_wi_bl,s1_soil_root!="S.B"&s1_s2_life_stage!="S.Start"&s1_s2_life_stage!="Start.Start")
+nrow(SILVA_MERDS_rar_WU_dis_start_wi_bl_trans)
+#16
+trans_WU_intercept=SILVA_MERDS_rar_WU_dis_start_wi_bl_trans %>% group_by(time,s1_soil_root,s1_precip) %>% 
+  summarise_at(vars(w_unifrac),c(~mean(.),~n(),se=~sd(.)/sqrt(n())))
+
+(dream_comm_turnover_dot_error_orig_p=ggplot(SILVA_MERDS_rar_WU_dis_start_wi_bl_trans)+
+    geom_errorbar(data = trans_WU_intercept,aes(group=factor(s1_soil_root,levels = c("L.B","L.R")),
+                                                  x=factor(s1_precip, levels = c("A","D")),y=mean,ymin=mean-se,ymax=mean+se),
+                width=.3,size=1, position = position_dodge(0.5), color="black")+
+  geom_point(aes(x=factor(s1_precip, levels = c("A","D")),y=w_unifrac,fill=s1_precip, 
+                 shape=factor(s1_soil_root,levels = c("L.B","L.R"))), size=3, position = position_dodge(0.5))+
+  geom_point(data = trans_WU_intercept,aes(x=factor(s1_precip, levels = c("A","D")),y=mean,fill=s1_precip, 
+                                               shape=factor(s1_soil_root,levels = c("L.B","L.R"))), size=7, position = position_dodge(0.5),stroke=1.5)+
+  scale_y_continuous(name =str_wrap("Distance from initial soil (Weighted Unifrac distance)",width = 30))+
+  scale_x_discrete(label=c("Ambient","Drought"))+
+  scale_shape_manual(values= c(21,24),name=NULL)+scale_fill_manual(values = c("cyan3","Red1"))+
+  theme_bw()+theme(axis.text = element_text(size = 18),axis.title.x = element_blank(), axis.title.y = element_text(size = 22),
+                   legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+
+#ggsave("D:/MERDS_2018/merds/Switchgrass/R_fig/trans_dream_comm_turnover_dot_error.svg",dream_comm_turnover_dot_error_orig_p,width =11,height = 8,device="svg")
+```
+
+
+#### Origin Distance from start community seedling
+Diagnostic Graphs
+```{r}
+SILVA_MERDS_rar_WU_dis_wi_bl_trans=subset(SILVA_MERDS_rar_WU_dis_start_wi_bl_trans,time!="Start")
+
+nrow(SILVA_MERDS_rar_WU_dis_wi_bl_trans)
+#16
+
+
+WU_pair_trans_mod= lmer(w_unifrac~s1_soil_root*s1_precip+(1|sample2), data= SILVA_MERDS_rar_WU_dis_wi_bl_trans)
+qqPlot(resid(WU_pair_trans_mod))
+hist(resid(WU_pair_trans_mod))
+shapiro.test(resid(WU_pair_trans_mod))
+# 0.6766
+```
+
+Raw Statistical output
+
+```{r}
+anova(WU_pair_trans_mod, type=3)
+emmeans(WU_pair_trans_mod, pairwise~s1_soil_root|s1_precip)
+
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_WU_pair_trans_mod=anova(WU_pair_trans_mod)
+df_anova_WU_pair_trans_mod=data.frame(row.names =row.names(anova_WU_pair_trans_mod),"Df"=anova_WU_pair_trans_mod$NumDF,"Resid Df"=anova_WU_pair_trans_mod$DenDF,"F-value"=anova_WU_pair_trans_mod$`F value`,"P-value"=anova_WU_pair_trans_mod$`Pr(>F)`)
+kable(df_anova_WU_pair_trans_mod,align = "c",digits = c(1,2,2,3), caption= "Trans Distance to initial soil communtiy")
+```
+
+
+#### Seed Experimental Distance from start community seed
+
+##### Graph for publication
+```{r echo=FALSE}
+SILVA_MERDS_rar_WU_dis_start_wi_bl_seed_exp=subset(SILVA_MERDS_rar_WU_dis_start_wi_bl,s1_soil_root!="G.B"&s1_s2_life_stage!="G.Start"&s1_s2_life_stage!="Start.Start")
+nrow(SILVA_MERDS_rar_WU_dis_start_wi_bl_seed_exp)
+#23
+
+seed_WU_intercept_exp=SILVA_MERDS_rar_WU_dis_start_wi_bl_seed_exp %>% group_by(s1_soil_root,s1_precip) %>%
+  summarise_at(vars(w_unifrac),c(~mean(.),~n(),se=~sd(.)/sqrt(n())))
+unique(SILVA_MERDS_rar_WU_dis_start_wi_bl_seed_exp$s1_soil_root)
+(seed_dream_comm_turnover_dot_error_p=ggplot(SILVA_MERDS_rar_WU_dis_start_wi_bl_seed_exp)+
+  geom_errorbar(data = seed_WU_intercept_exp,aes(group=factor(s1_soil_root,levels = c("S.B","L.B","L.R")),
+                                                  x=factor(s1_precip, levels = c("A","D")),y=mean,ymin=mean-se,ymax=mean+se),
+                width=.3,size=1, position = position_dodge(0.5), color="black")+
+  geom_point(aes(x=factor(s1_precip, levels = c("A","D")),y=w_unifrac,fill=s1_precip, 
+                 shape=factor(s1_soil_root,levels = c("S.B","L.B","L.R"))), size=3, position = position_dodge(0.5))+
+  geom_point(data = seed_WU_intercept_exp,aes(x=factor(s1_precip, levels = c("A","D")),y=mean,fill=s1_precip, 
+                                               shape=factor(s1_soil_root,levels = c("S.B","L.B","L.R"))), size=7, position = position_dodge(0.5),stroke=1.5)+
+  scale_y_continuous(name =str_wrap("Distance from initial soil (Weighted Unifrac distance)",width = 30))+
+  scale_x_discrete(label=c("Ambient","Drought"))+
+  scale_shape_manual(values= c(23,21,24),name=NULL)+scale_fill_manual(values = c("cyan3","Red1"))+
+  theme_bw()+theme(axis.text = element_text(size = 18),axis.title.x = element_blank(), axis.title.y = element_text(size = 22),
+                   legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+#ggsave("D:/MERDS_2018/merds/Switchgrass/R_fig/seed_dream_comm_w_sterile_turnover_dot_error.svg",seed_dream_comm_turnover_dot_error_p,width =11,height = 8,device="svg")
+```
+
+#### Presence Distance from start community seed
+Diagnostic Graphs
+```{r}
+SILVA_MERDS_rar_WU_dis_wi_bl_seed_pres=subset(SILVA_MERDS_rar_WU_dis_start_wi_bl_seed_exp,time!="Start"&s1_soil_root!="L.R")
+nrow(SILVA_MERDS_rar_WU_dis_wi_bl_seed_pres)
+#15
+WU_pair_seed_mod_pres= lmer(w_unifrac~s1_soil_root*s1_precip+(1|sample2), data= SILVA_MERDS_rar_WU_dis_wi_bl_seed_pres)
+qqPlot(resid(WU_pair_seed_mod_pres))
+hist(resid(WU_pair_seed_mod_pres))
+shapiro.test(resid(WU_pair_seed_mod_pres))
+
+
+```
+Raw Statistical output
+
+```{r}
+anova(WU_pair_seed_mod_pres)
+emmeans(WU_pair_seed_mod_pres,pairwise~s1_soil_root|s1_precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_WU_pair_seed_mod_pres=anova(WU_pair_seed_mod_pres)
+df_anova_WU_pair_seed_mod_pres=data.frame(row.names =row.names(anova_WU_pair_seed_mod_pres),"Df"=anova_WU_pair_seed_mod_pres$NumDF,"Resid Df"=anova_WU_pair_seed_mod_pres$DenDF,"F-value"=anova_WU_pair_seed_mod_pres$`F value`,"P-value"=anova_WU_pair_seed_mod_pres$`Pr(>F)`)
+kable(df_anova_WU_pair_seed_mod_pres,align = "c",digits = c(1,2,2,3), caption= "Seed Distance to initial soil communtiy")
+```
+
+
+#### Origin Distance from start community seedling
+
+
+
+##### Graph for publication
+
+```{r echo=FALSE}
+SILVA_MERDS_rar_WU_dis_start_wi_bl_seed=subset(SILVA_MERDS_rar_WU_dis_start_wi_bl,s1_soil_root!="G.B"&s1_s2_life_stage!="G.Start"&s1_soil_root!="S.B"&s1_s2_life_stage!="Start.Start")
+nrow(SILVA_MERDS_rar_WU_dis_start_wi_bl_seed)
+#16
+seed_WU_intercept=SILVA_MERDS_rar_WU_dis_start_wi_bl_seed %>% group_by(time,s1_soil_root,s1_precip) %>% 
+  summarise_at(vars(w_unifrac),c(~mean(.),~n(),se=~sd(.)/sqrt(n())))
+
+(seed_dream_comm_turnover_dot_error_orig_p=ggplot(SILVA_MERDS_rar_WU_dis_start_wi_bl_seed)+
+    geom_errorbar(data = seed_WU_intercept,aes(group=factor(s1_soil_root,levels = c("L.B","L.R")),
+                                                  x=factor(s1_precip, levels = c("A","D")),y=mean,ymin=mean-se,ymax=mean+se),
+                width=.3,size=1, position = position_dodge(0.5), color="black")+
+  geom_point(aes(x=factor(s1_precip, levels = c("A","D")),y=w_unifrac,fill=s1_precip, 
+                 shape=factor(s1_soil_root,levels = c("L.B","L.R"))), size=3, position = position_dodge(0.5))+
+  geom_point(data = seed_WU_intercept,aes(x=factor(s1_precip, levels = c("A","D")),y=mean,fill=s1_precip, 
+                                               shape=factor(s1_soil_root,levels = c("L.B","L.R"))), size=7, position = position_dodge(0.5),stroke=1.5)+
+  scale_y_continuous(name =str_wrap("Distance from initial soil (Weighted Unifrac distance)",width = 30))+
+  scale_x_discrete(label=c("Ambient","Drought"))+
+  scale_shape_manual(values= c(21,24),name=NULL)+scale_fill_manual(values = c("cyan3","Red1"))+
+  theme_bw()+theme(axis.text = element_text(size = 18),axis.title.x = element_blank(), axis.title.y = element_text(size = 22),
+                   legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+
+#ggsave("D:/MERDS_2018/merds/Switchgrass/R_fig/seed_dream_comm_turnover_dot_error.svg",seed_dream_comm_turnover_dot_error_orig_p,width =11,height = 8,device="svg")
+```
+
+Diagnostic Graphs
+```{r}
+SILVA_MERDS_rar_WU_dis_wi_bl_seed=subset(SILVA_MERDS_rar_WU_dis_start_wi_bl_seed,time!="Start")
+
+WU_pair_seed_mod= lmer(w_unifrac~s1_soil_root*s1_precip+(1|sample2), data= SILVA_MERDS_rar_WU_dis_wi_bl_seed)
+qqPlot(resid(WU_pair_seed_mod))
+hist(resid(WU_pair_seed_mod))
+shapiro.test(resid(WU_pair_seed_mod))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(WU_pair_seed_mod)
+emmeans(WU_pair_seed_mod,pairwise~s1_soil_root|s1_precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_WU_pair_seed_mod=anova(WU_pair_seed_mod)
+df_anova_WU_pair_seed_mod=data.frame(row.names =row.names(anova_WU_pair_seed_mod),"Df"=anova_WU_pair_seed_mod$NumDF,"Resid Df"=anova_WU_pair_seed_mod$DenDF,"F-value"=anova_WU_pair_seed_mod$`F value`,"P-value"=anova_WU_pair_seed_mod$`Pr(>F)`)
+kable(df_anova_WU_pair_seed_mod,align = "c",digits = c(1,2,2,3), caption= "Seed Distance to initial soil communtiy")
+```
+
+### Initial Community Analyses 
+```{r}
+SILVA_MERDS_rar_start=subset_samples(SILVA_MERDS_rar, life_stage=="Start")
+nsamples(SILVA_MERDS_rar_start)
+#8
+
+SILVA_MERDS_rar_start_WU_dis=distance(SILVA_MERDS_rar_start,method = "wunifrac")
+SILVA_MERDS_rar_start_map=sample_data(SILVA_MERDS_rar_start)
+
+
+adonis(SILVA_MERDS_rar_start_WU_dis~SILVA_MERDS_rar_start_map$root_association,permutations = 9999)
+```
+### Community Analyses both life stages
+
+
+
+
+File creation for the analysis in Primer
+
+```{r}
+
+#####Weighted Unifrac####
+SILVA_MERDS_rar_NS=subset_samples(SILVA_MERDS_rar, life_stage!="Start")
+nsamples(SILVA_MERDS_rar_NS)
+#47
+SILVA_MERDS_rar_NS_WU_ord=ordinate(SILVA_MERDS_rar_NS, method = "NMDS", distance = "wunifrac")
+#*** Solution reached
+#0.08503251  
+plot_ordination(SILVA_MERDS_rar_NS,SILVA_MERDS_rar_NS_WU_ord, color="root_association",shape="life_stage")+geom_point(size=3)+
+  theme_bw()
+#Treatment factors 
+#write.csv(data.frame(sample_data(SILVA_MERDS_rar_NS))[c("precip","block","soil_root","root_association","soil_status","life_stage")],"D:/MERDS_2018/merds/Switchgrass/R_data/SILVA_MERDS_rar_NS_map.csv")
+#distance file 
+#write.csv(as.matrix(distance(SILVA_MERDS_rar_NS,method = "wunifrac")),"D:/MERDS_2018/merds/Switchgrass/R_data/Weight_Uni_SILVA_MERDS_rar_NS_dist.csv")
+```
+
+### Community Analyses Transplants
+
+```{r include=FALSE}
+SILVA_MERDS_rar_trans=subset_samples(SILVA_MERDS_rar, life_stage=="G"|life_stage=="Start")
+SILVA_MERDS_rar_trans_map=sample_data(SILVA_MERDS_rar_trans)
+summary(sample_data(SILVA_MERDS_rar_trans_map))
+SILVA_MERDS_rar_trans_WU_ord=ordinate(SILVA_MERDS_rar_trans, method = "NMDS",distance = "wunifrac")
+#*** Solution reached
+#0.04807855 
+SILVA_MERDS_rar_trans_ord_WU_points=merge(SILVA_MERDS_rar_trans_WU_ord$points,SILVA_MERDS_rar_trans_map,by="row.names")
+nrow(SILVA_MERDS_rar_trans_ord_WU_points)
+summary(SILVA_MERDS_rar_trans_ord_WU_points)
+```
+
+##### Graph for publication
+
+```{r echo=FALSE}
+(trans_ord_p=ggplot(data=SILVA_MERDS_rar_trans_ord_WU_points, aes(x=MDS1,y=MDS2))+
+    geom_point(size=7, stroke=1.5,aes(shape=soil_root, fill=precip))+
+    theme_bw()+xlab("NMDS1")+ylab("NMDS2")+
+    scale_shape_manual(values = c(21,23,24))+scale_fill_manual(values = c("Red1","cyan3","black"))+
+    theme(axis.title = element_text(size = 20),axis.text = element_text(size = 18),legend.position = "none",
+          panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+#ggsave("D:/MERDS_2018/merds/Switchgrass/R_fig/nmds_seedling_w_sterile_start.svg",trans_ord_p,width =8,height = 8,device="svg")
+```
+
+### Community Analyses Live Transplants
+
+```{r include=FALSE}
+SILVA_MERDS_rar_live_trans=subset_samples(SILVA_MERDS_rar, soil_status!="S"&life_stage=="G"|life_stage=="Start")
+SILVA_MERDS_rar_live_trans_map=sample_data(SILVA_MERDS_rar_live_trans)
+summary(sample_data(SILVA_MERDS_rar_live_trans))
+SILVA_MERDS_rar_live_trans_WU_ord=ordinate(SILVA_MERDS_rar_live_trans, method = "NMDS",distance = "wunifrac")
+#*** Solution reached
+#0.05617122  
+SILVA_MERDS_rar_live_trans_ord_WU_points=merge(SILVA_MERDS_rar_live_trans_WU_ord$points,SILVA_MERDS_rar_live_trans_map,by="row.names")
+nrow(SILVA_MERDS_rar_live_trans_ord_WU_points)
+summary(SILVA_MERDS_rar_live_trans_ord_WU_points)
+```
+
+##### Graph for publication
+
+```{r echo=FALSE}
+(live_trans_ord_p=ggplot(data=SILVA_MERDS_rar_live_trans_ord_WU_points, aes(x=MDS1,y=MDS2))+
+    geom_point(size=10, stroke=1.5,aes(shape=root_association, fill=precip))+
+    theme_bw()+xlab("NMDS1")+ylab("NMDS2")+
+    scale_shape_manual(values = c(21,24))+scale_fill_manual(values = c("Red1","cyan3","black"))+
+    theme(axis.title = element_text(size = 20),axis.text = element_text(size = 18),legend.position = "none",
+          panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+#ggsave("D:/MERDS_2018/merds/Switchgrass/R_fig/nmds_seedling_w_start.svg",live_trans_ord_p,width =8,height = 8,device="svg")
+```
+
+
+
+### Community Analyses Transplants with no Start
+
+```{r include=FALSE}
+SILVA_MERDS_rar_exp_trans=subset_samples(SILVA_MERDS_rar, life_stage=="G")
+SILVA_MERDS_rar_exp_trans_map=sample_data(SILVA_MERDS_rar_exp_trans)
+summary(SILVA_MERDS_rar_exp_trans_map)
+SILVA_MERDS_rar_exp_trans_WU_ord=ordinate(SILVA_MERDS_rar_exp_trans, method = "NMDS",distance = "wunifrac")
+#*** Solution reached
+#0.0533245  
+SILVA_MERDS_rar_exp_trans_WU_ord_points=merge(SILVA_MERDS_rar_exp_trans_WU_ord$points,SILVA_MERDS_rar_exp_trans_map,by="row.names")
+nrow(SILVA_MERDS_rar_exp_trans_WU_ord_points)
+summary(SILVA_MERDS_rar_exp_trans_WU_ord_points)
+```
+
+##### Graph for publication
+
+```{r echo=FALSE}
+(live_trans_ord_no_start_p=ggplot(data=SILVA_MERDS_rar_exp_trans_WU_ord_points, aes(x=MDS1,y=MDS2))+
+    geom_point(size=10, stroke=1.5,aes(shape=soil_root, fill=precip))+
+    theme_bw()+xlab("NMDS1")+ylab("NMDS2")+
+    scale_shape_manual(values = c(21,23,24))+scale_fill_manual(values = c("Red1","cyan3","black"))+
+    theme(axis.title = element_text(size = 20),axis.text = element_text(size = 18),legend.position = "none",
+          panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+```
+
+### Community Analyses Transplants with no Start
+
+File creation for analyses in Primer
+
+```{r include=FALSE}
+SILVA_MERDS_rar_trt=subset_samples(SILVA_MERDS_rar, life_stage!="Start")
+
+SILVA_MERDS_rar_trt_trans=subset_samples(SILVA_MERDS_rar_trt, life_stage=="G")
+SILVA_MERDS_rar_trt_trans_WU_ord=ordinate(SILVA_MERDS_rar_trt_trans, method = "NMDS",distance = "Wunifrac")
+#*** Solution reached
+
+#0.0533245 
+plot_ordination(SILVA_MERDS_rar_trt_trans,SILVA_MERDS_rar_trt_trans_WU_ord, color="precip",shape="soil_root")+geom_point(size=4)+
+  geom_label_repel(size=3,aes(label = block))+theme_bw()
+#Treatment factors 
+#write.csv(data.frame(sample_data(SILVA_MERDS_rar_trt_trans))[c("precip","block","soil_root","root_association","soil_status")],"D:/MERDS_2018/merds/Switchgrass/R_data/trans_SILVA_MERDS_rar_live_NS_map.csv")
+#distance file 
+#write.csv(as.matrix(distance(SILVA_MERDS_rar_trt_trans,method = "wunifrac")),"D:/MERDS_2018/merds/Switchgrass/R_data/trans_Weight_Uni_SILVA_MERDS_rar_live_NS_dist.csv")
+```
+
+### Community Analyses Germination
+
+```{r include=FALSE}
+SILVA_MERDS_rar_seed=subset_samples(SILVA_MERDS_rar, life_stage=="S"|life_stage=="Start")
+SILVA_MERDS_rar_seed_map=sample_data(SILVA_MERDS_rar_seed)
+summary(sample_data(SILVA_MERDS_rar_seed_map))
+SILVA_MERDS_rar_seed_WU_ord=ordinate(SILVA_MERDS_rar_seed, method = "NMDS",distance = "wunifrac")
+#*** Solution reached
+#0.05767326 
+SILVA_MERDS_rar_seed_ord_WU_points=merge(SILVA_MERDS_rar_seed_WU_ord$points,SILVA_MERDS_rar_seed_map,by="row.names")
+nrow(SILVA_MERDS_rar_seed_ord_WU_points)
+summary(SILVA_MERDS_rar_seed_ord_WU_points)
+```
+
+##### Graph for publication
+
+```{r echo=FALSE}
+(trans_ord_p=ggplot(data=SILVA_MERDS_rar_seed_ord_WU_points, aes(x=MDS1,y=MDS2))+
+    geom_point(size=7, stroke=1.5,aes(shape=soil_root, fill=precip))+
+    theme_bw()+xlab("NMDS1")+ylab("NMDS2")+
+    scale_shape_manual(values = c(21,23,24))+scale_fill_manual(values = c("Red1","cyan3","black"))+
+    theme(axis.title = element_text(size = 20),axis.text = element_text(size = 18),legend.position = "none",
+          panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+#ggsave("D:/MERDS_2018/merds/Switchgrass/R_fig/nmds_germination_w_sterile_start.svg",trans_ord_p,width =8,height = 8,device="svg")
+```
+
+### Community Analyses Live Germination
+
+```{r include=FALSE}
+SILVA_MERDS_rar_live_seed=subset_samples(SILVA_MERDS_rar, soil_status!="S"&life_stage=="S"|life_stage=="Start")
+SILVA_MERDS_rar_live_seed_map=sample_data(SILVA_MERDS_rar_live_seed)
+summary(sample_data(SILVA_MERDS_rar_live_seed))
+SILVA_MERDS_rar_live_seed_WU_ord=ordinate(SILVA_MERDS_rar_live_seed, method = "NMDS",distance = "wunifrac")
+#*** Solution reached
+#0.05023149  
+SILVA_MERDS_rar_live_seed_ord_WU_points=merge(SILVA_MERDS_rar_live_seed_WU_ord$points,SILVA_MERDS_rar_live_seed_map,by="row.names")
+nrow(SILVA_MERDS_rar_live_seed_ord_WU_points)
+summary(SILVA_MERDS_rar_live_seed_ord_WU_points)
+```
+
+##### Graph for publication
+
+```{r echo=FALSE}
+(live_seed_ord_p=ggplot(data=SILVA_MERDS_rar_live_seed_ord_WU_points, aes(x=MDS1,y=MDS2))+
+    geom_point(size=10, stroke=1.5,aes(shape=root_association, fill=precip))+
+    theme_bw()+xlab("NMDS1")+ylab("NMDS2")+
+    scale_shape_manual(values = c(21,24))+scale_fill_manual(values = c("Red1","cyan3","black"))+
+    theme(axis.title = element_text(size = 20),axis.text = element_text(size = 18),legend.position = "none",
+          panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+#ggsave("D:/MERDS_2018/merds/Switchgrass/R_fig/nmds_germination_w_start.svg",live_seed_ord_p,width =8,height = 8,device="svg")
+```
+
+
+
+### Community Analyses Germination with no Start
+
+```{r include=FALSE}
+SILVA_MERDS_rar_exp_seed=subset_samples(SILVA_MERDS_rar, life_stage=="S")
+SILVA_MERDS_rar_exp_seed_map=sample_data(SILVA_MERDS_rar_exp_seed)
+summary(SILVA_MERDS_rar_exp_seed_map)
+SILVA_MERDS_rar_exp_seed_WU_ord=ordinate(SILVA_MERDS_rar_exp_seed, method = "NMDS",distance = "wunifrac")
+#*** Solution reached
+#0.06719555   
+SILVA_MERDS_rar_exp_seed_WU_ord_points=merge(SILVA_MERDS_rar_exp_seed_WU_ord$points,SILVA_MERDS_rar_exp_seed_map,by="row.names")
+nrow(SILVA_MERDS_rar_exp_seed_WU_ord_points)
+summary(SILVA_MERDS_rar_exp_seed_WU_ord_points)
+```
+
+##### Graph for publication
+
+```{r echo=FALSE}
+(live_seed_ord_no_start_p=ggplot(data=SILVA_MERDS_rar_exp_seed_WU_ord_points, aes(x=MDS1,y=MDS2))+
+    geom_point(size=10, stroke=1.5,aes(shape=soil_root, fill=precip))+
+    theme_bw()+xlab("NMDS1")+ylab("NMDS2")+
+    scale_shape_manual(values = c(21,23,24))+scale_fill_manual(values = c("Red1","cyan3","black"))+
+    theme(axis.title = element_text(size = 20),axis.text = element_text(size = 18),legend.position = "none",
+          panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+```
+
+### Community Analyses Germination with no Start
+
+File creation for analyses in Primer
+
+```{r include=FALSE}
+SILVA_MERDS_rar_trt=subset_samples(SILVA_MERDS_rar, life_stage!="Start")
+
+SILVA_MERDS_rar_trt_seed=subset_samples(SILVA_MERDS_rar_trt, life_stage=="S")
+SILVA_MERDS_rar_trt_seed_WU_ord=ordinate(SILVA_MERDS_rar_trt_seed, method = "NMDS",distance = "Wunifrac")
+#*** Solution reached
+
+#0.06719555 
+plot_ordination(SILVA_MERDS_rar_trt_seed,SILVA_MERDS_rar_trt_seed_WU_ord, color="precip",shape="soil_root")+geom_point(size=4)+
+  geom_label_repel(size=3,aes(label = block))+theme_bw()
+#Treatment factors 
+#write.csv(data.frame(sample_data(SILVA_MERDS_rar_trt_seed))[c("precip","block","soil_root","root_association","soil_status")],"D:/MERDS_2018/merds/Switchgrass/R_data/seed_SILVA_MERDS_rar_live_NS_map.csv")
+#distance file 
+#write.csv(as.matrix(distance(SILVA_MERDS_rar_trt_seed,method = "wunifrac")),"D:/MERDS_2018/merds/Switchgrass/R_data/seed_Weight_Uni_SILVA_MERDS_rar_live_NS_dist.csv")
+```
+
+### Transplant Stack bar graphs
+
+```{r echo=FALSE}
+SILVA_MERDS_rar_trt_trans=subset_samples(SILVA_MERDS_rar, life_stage=="G"&life_stage!="Start")
+nrow(sample_data(SILVA_MERDS_rar_trt_trans))
+#24
+sample_data(SILVA_MERDS_rar_trt_trans)$soil_root_precip=with(sample_data(SILVA_MERDS_rar_trt_trans), interaction(soil_root, precip))
+ntaxa(SILVA_MERDS_rar_trt_trans)
+#merge OTUs by the soil and precipitation treatment
+SILVA_MERDS_rar_trt_trans_fact=merge_samples(SILVA_MERDS_rar_trt_trans, "soil_root_precip")
+sample_names(SILVA_MERDS_rar_trt_trans_fact)     
+
+#combine the reads at Phylum level
+get_taxa_unique(SILVA_MERDS_rar_trt_trans, taxonomic.rank="Phylum")
+#44
+(SILVA_MERDS_rar_trt_trans_fact.phylum<-tax_glom(SILVA_MERDS_rar_trt_trans_fact, taxrank="Phylum"))
+
+
+
+#subset so there is only the top ten most abundant phyla
+SILVA_TopPHYL_trans = names(sort(taxa_sums(SILVA_MERDS_rar_trt_trans_fact.phylum), TRUE)[1:10])
+SILVA_MERDS_rar_trt_trans.T10 = prune_taxa(SILVA_TopPHYL_trans, SILVA_MERDS_rar_trt_trans_fact.phylum)
+SILVA_trans_name_T10=get_taxa_unique(SILVA_MERDS_rar_trt_trans.T10, taxonomic.rank="Phylum")
+SILVA_trans_name_T10_sep <- colsplit(SILVA_trans_name_T10, ":", c("letter", "Phyl_name"))
+SILVA_trans_name_T10_sep[SILVA_trans_name_T10_sep==""]="Unknown"
+
+#transform the read counts to prop of total reads
+
+SILVA_MERDS_rar_trt_trans_fact.phylum.prop=transform_sample_counts(SILVA_MERDS_rar_trt_trans_fact.phylum, function(x)x/sum(x))
+
+taxon_positions=c("S.B.A","L.B.A", "L.R.A", "S.B.D","L.B.D" ,"L.R.D")
+SILVA_MERDS_rar_trt_trans_10_prop = prune_taxa(SILVA_TopPHYL_trans, SILVA_MERDS_rar_trt_trans_fact.phylum.prop)
+
+SILVA_MERDS_rar_trt_trans_10_prop_otu=as.data.frame(t(otu_table(SILVA_MERDS_rar_trt_trans_10_prop)))
+
+#create an other taxa category
+SILVA_taxon_sums_trans=c(sum(SILVA_MERDS_rar_trt_trans_10_prop_otu$L.B.A),sum(SILVA_MERDS_rar_trt_trans_10_prop_otu$S.B.A),
+                         sum(SILVA_MERDS_rar_trt_trans_10_prop_otu$L.R.A),sum(SILVA_MERDS_rar_trt_trans_10_prop_otu$L.B.D),
+                         sum(SILVA_MERDS_rar_trt_trans_10_prop_otu$S.B.D),sum(SILVA_MERDS_rar_trt_trans_10_prop_otu$L.R.D))
+SILVA_tran_other_spp=c(as.numeric(1-SILVA_taxon_sums_trans))
+SILVA_MERDS_rar_trt_trans_10_prop_OTU=rbind(SILVA_MERDS_rar_trt_trans_10_prop_otu,SILVA_tran_other_spp)
+summary(SILVA_MERDS_rar_trt_trans_10_prop_OTU)
+SILVA_MERDS_rar_trt_trans_10_prop_OTU[,"Phylum"]=c(as.character(SILVA_trans_name_T10_sep$Phyl_name),"Other Phyla")
+summary(SILVA_MERDS_rar_trt_trans_10_prop_OTU)
+SILVA_MERDS_rar_trt_trans_10_prop_OTU_M=melt(SILVA_MERDS_rar_trt_trans_10_prop_OTU,id="Phylum")
+phyl_order=c(sort(as.character(SILVA_trans_name_T10_sep$Phyl_name)),"Other Phyla")
+summary(SILVA_MERDS_rar_trt_trans_10_prop_OTU_M)
+
+
+
+(p_bact_stack_trans_color=ggplot(SILVA_MERDS_rar_trt_trans_10_prop_OTU_M,aes(x=variable,y=value,fill=factor(Phylum, levels=phyl_order)))+
+    geom_bar(aes( fill=factor(Phylum, levels=phyl_order)), stat="identity", position="stack",color="black")+theme_bw()+
+    theme(axis.text.y=element_text(size=18),axis.text.x=element_text(size=18),
+          axis.title=element_text(size=20),panel.grid.major=element_blank(),legend.text = element_text(size=16), legend.title = element_text(size=20),
+          panel.grid.minor=element_blank())+xlab(NULL)+ylab("Proportion")+
+    scale_x_discrete(limits = taxon_positions,labels=c("Sterile\nAmbient","Bulk\nAmbient", 
+                                                       "Rhizo\nAmbient",
+                                                       "Sterile\nDrought",
+                                                       "Bulk\nDrought", 
+                                                       "Rhizo\nDrought"))+scale_fill_manual(values = c("#A6CEE3","#1F78B4","#B2DF8A","#33A02C",
+                                                                                                       "#FB9A99","#E31A1C","#FDBF6F","#FF7F00","white","#6A3D9A","#FFFF99"))+
+    guides(fill=guide_legend(title="Phyla")))
+#1000x700
+library(RColorBrewer)
+(Paired_palete_list=brewer.pal(n = 12, name = "Paired"))
+```
+
+
+### Seed Stack bar graphs
+```{r echo=FALSE}
+SILVA_MERDS_rar_trt_seed=subset_samples(SILVA_MERDS_rar, life_stage=="S"&life_stage!="Start")
+nrow(sample_data(SILVA_MERDS_rar_trt_seed))
+#24
+sample_data(SILVA_MERDS_rar_trt_seed)$soil_root_precip=with(sample_data(SILVA_MERDS_rar_trt_seed), interaction(soil_root, precip))
+
+ntaxa(SILVA_MERDS_rar_trt_seed)
+#8366
+#merge OTUs by the soil and precipitation treatment
+SILVA_MERDS_rar_trt_seed_fact=merge_samples(SILVA_MERDS_rar_trt_seed, "soil_root_precip")
+sample_names(SILVA_MERDS_rar_trt_seed_fact)     
+
+#combine the reads at Phylum level
+get_taxa_unique(SILVA_MERDS_rar_trt_seed, taxonomic.rank="Phylum")
+#44
+(SILVA_MERDS_rar_trt_seed_fact.phylum<-tax_glom(SILVA_MERDS_rar_trt_seed_fact, taxrank="Phylum"))
+
+
+
+#subset so there is only the top ten most abundant phyla
+SILVA_TopPHYL_seed = names(sort(taxa_sums(SILVA_MERDS_rar_trt_seed_fact.phylum), TRUE)[1:10])
+SILVA_MERDS_rar_trt_seed.T10 = prune_taxa(SILVA_TopPHYL_seed, SILVA_MERDS_rar_trt_seed_fact.phylum)
+SILVA_seed_name_T10=get_taxa_unique(SILVA_MERDS_rar_trt_seed.T10, taxonomic.rank="Phylum")
+SILVA_seed_name_T10_sep <- colsplit(SILVA_seed_name_T10, ":", c("letter", "Phyl_name"))
+
+
+#seedform the read counts to prop of total reads
+
+SILVA_MERDS_rar_trt_seed_fact.phylum.prop=transform_sample_counts(SILVA_MERDS_rar_trt_seed_fact.phylum, function(x)x/sum(x))
+
+taxon_positions=c("S.B.A","L.B.A", "L.R.A", "S.B.D","L.B.D" ,"L.R.D")
+SILVA_MERDS_rar_trt_seed_10_prop = prune_taxa(SILVA_TopPHYL_seed, SILVA_MERDS_rar_trt_seed_fact.phylum.prop)
+
+SILVA_MERDS_rar_trt_seed_10_prop_otu=as.data.frame(t(otu_table(SILVA_MERDS_rar_trt_seed_10_prop)))
+
+#create an other taxa category
+SILVA_taxon_sums_seed=c(sum(SILVA_MERDS_rar_trt_seed_10_prop_otu$L.B.A),sum(SILVA_MERDS_rar_trt_seed_10_prop_otu$S.B.A),
+                        sum(SILVA_MERDS_rar_trt_seed_10_prop_otu$L.R.A),sum(SILVA_MERDS_rar_trt_seed_10_prop_otu$L.B.D),
+                        sum(SILVA_MERDS_rar_trt_seed_10_prop_otu$S.B.D),sum(SILVA_MERDS_rar_trt_seed_10_prop_otu$L.R.D))
+SILVA_seed_other_spp=c(as.numeric(1-SILVA_taxon_sums_seed))
+SILVA_MERDS_rar_trt_seed_10_prop_OTU=rbind(SILVA_MERDS_rar_trt_seed_10_prop_otu,SILVA_seed_other_spp)
+summary(SILVA_MERDS_rar_trt_seed_10_prop_OTU)
+SILVA_MERDS_rar_trt_seed_10_prop_OTU[,"Phylum"]=c(as.character(SILVA_seed_name_T10_sep$Phyl_name),"Other Phyla")
+summary(SILVA_MERDS_rar_trt_seed_10_prop_OTU)
+SILVA_MERDS_rar_trt_seed_10_prop_OTU_M=melt(SILVA_MERDS_rar_trt_seed_10_prop_OTU,id="Phylum")
+phyl_order_seed=c(sort(as.character(SILVA_seed_name_T10_sep$Phyl_name)),"Other Phyla")
+summary(SILVA_MERDS_rar_trt_seed_10_prop_OTU_M)
+
+
+
+(p_bact_stack_seed_color=ggplot(SILVA_MERDS_rar_trt_seed_10_prop_OTU_M,aes(x=variable,y=value,fill=factor(Phylum, levels=phyl_order_seed)))+
+    geom_bar(aes( fill=factor(Phylum, levels=phyl_order_seed)), stat="identity", position="stack",color="black")+theme_bw()+
+    theme(axis.text.y=element_text(size=18),axis.text.x=element_text(size=18),
+          axis.title=element_text(size=20),panel.grid.major=element_blank(),legend.text = element_text(size=16), legend.title = element_text(size=20),
+          panel.grid.minor=element_blank())+xlab(NULL)+ylab("Proportion")+
+    scale_x_discrete(limits = taxon_positions,labels=c("Sterile\nAmbient","Bulk\nAmbient", 
+                                                       "Rhizo\nAmbient",
+                                                       "Sterile\nDrought",
+                                                       "Bulk\nDrought", 
+                                                       "Rhizo\nDrought"))+scale_fill_manual(values = c("#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#CAB2D6",
+                                                                                                       "#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#6A3D9A","#FFFF99"))+
+    guides(fill=guide_legend(title="Phyla")))
+
+#1000x700
+```
+##### Combined taxon stacked bargraph
+```{r echo=FALSE}
+
+ggarrange(p_bact_stack_trans_color,p_bact_stack_seed_color,ncol = 2, common.legend=F)
+#ggsave("D:/MERDS_2018/merds/Switchgrass/R_fig/taxon_stacked_bar_graph_comb.png",ggarrange(p_bact_stack_trans_color,p_bact_stack_seed_color,ncol = 2, common.legend=F),width =22,height = 8,device="png")
+#ggsave("D:/MERDS_2018/merds/Switchgrass/R_fig/taxon_stacked_bar_graph_comb.svg",ggarrange(p_bact_stack_trans_color,p_bact_stack_seed_color,ncol = 2, common.legend=F),width =22,height = 8,device="svg")
+```
+### Starting community Stack bar graphs
+
+```{r echo=FALSE}
+SILVA_MERDS_rar_trt_start=subset_samples(SILVA_MERDS_rar, life_stage=="Start")
+nrow(sample_data(SILVA_MERDS_rar_trt_start))
+#8
+
+#merge OTUs by the soil
+SILVA_MERDS_rar_trt_start_fact=merge_samples(SILVA_MERDS_rar_trt_start, "root_association")
+sample_names(SILVA_MERDS_rar_trt_start_fact)     
+
+#combine the reads at Phylum level
+get_taxa_unique(SILVA_MERDS_rar_trt_start_fact, taxonomic.rank="Phylum")
+#43
+(SILVA_MERDS_rar_trt_start_fact.phylum<-tax_glom(SILVA_MERDS_rar_trt_start_fact, taxrank="Phylum"))
+
+
+
+#subset so there is only the top ten most abundant phyla
+SILVA_TopPHYL_start = names(sort(taxa_sums(SILVA_MERDS_rar_trt_start_fact.phylum), TRUE)[1:10])
+SILVA_MERDS_rar_trt_start.T10 = prune_taxa(SILVA_TopPHYL_start, SILVA_MERDS_rar_trt_start_fact.phylum)
+SILVA_start_name_T10=get_taxa_unique(SILVA_MERDS_rar_trt_start.T10, taxonomic.rank="Phylum")
+SILVA_start_name_T10_sep <- colsplit(SILVA_start_name_T10, ":", c("letter", "Phyl_name"))
+
+
+#transform the read counts to prop of total reads
+
+SILVA_MERDS_rar_trt_start_fact.phylum.prop=transform_sample_counts(SILVA_MERDS_rar_trt_start_fact.phylum, function(x)x/sum(x))
+
+start_taxon_positions=c("B", "R")
+SILVA_MERDS_rar_trt_start_10_prop = prune_taxa(SILVA_TopPHYL_start, SILVA_MERDS_rar_trt_start_fact.phylum.prop)
+
+SILVA_MERDS_rar_trt_start_10_prop_otu=as.data.frame(t(otu_table(SILVA_MERDS_rar_trt_start_10_prop)))
+
+#create an other taxa category
+SILVA_taxon_sums_start=c(sum(SILVA_MERDS_rar_trt_start_10_prop_otu$B),
+                         sum(SILVA_MERDS_rar_trt_start_10_prop_otu$R))
+SILVA_start_other_spp=c(as.numeric(1-SILVA_taxon_sums_start))
+SILVA_MERDS_rar_trt_start_10_prop_OTU=rbind(SILVA_MERDS_rar_trt_start_10_prop_otu,SILVA_start_other_spp)
+summary(SILVA_MERDS_rar_trt_start_10_prop_OTU)
+SILVA_MERDS_rar_trt_start_10_prop_OTU[,"Phylum"]=c(as.character(SILVA_start_name_T10_sep$Phyl_name),"Other Phyla")
+summary(SILVA_MERDS_rar_trt_start_10_prop_OTU)
+SILVA_MERDS_rar_trt_start_10_prop_OTU_M=melt(SILVA_MERDS_rar_trt_start_10_prop_OTU,id="Phylum")
+start_phyl_order=c(sort(as.character(SILVA_start_name_T10_sep$Phyl_name)),"Other Phyla")
+summary(SILVA_MERDS_rar_trt_start_10_prop_OTU_M)
+
+
+
+(p_bact_stack_start_color=ggplot(SILVA_MERDS_rar_trt_start_10_prop_OTU_M,aes(x=variable,y=value,fill=factor(Phylum, levels=start_phyl_order)))+
+    geom_bar(aes( fill=factor(Phylum, levels=start_phyl_order)), stat="identity", position="stack",color="black")+theme_bw()+
+    theme(axis.text.y=element_text(size=18),axis.text.x=element_text(size=18),
+          axis.title=element_text(size=20),panel.grid.major=element_blank(),legend.text = element_text(size=16), legend.title = element_text(size=20),
+          panel.grid.minor=element_blank())+xlab(NULL)+ylab("Proportion")+
+    scale_x_discrete(limits = start_taxon_positions,labels=c("Bulk", 
+                                                       "Rhizo"))+scale_fill_manual(values = c("#A6CEE3","#1F78B4","#B2DF8A","#33A02C",
+                                                                                                       "#FB9A99","#E31A1C","#B15928","#FDBF6F","#FF7F00","#6A3D9A","#FFFF99"))+
+    guides(fill=guide_legend(title="Phyla")))
+#1000x700
+#ggsave("D:/MERDS_2018/merds/Switchgrass/R_fig/taxon_stacked_bar_graph_start.png",p_bact_stack_start_color,width =9,height = 8,device="png")
+#ggsave("D:/MERDS_2018/merds/Switchgrass/R_fig/taxon_stacked_bar_graph_start.svg",p_bact_stack_start_color,width =9,height = 8,device="svg")
+```
+
+# Community Diversity
+
+```{r include=FALSE}
+alpha_meas = c("Observed", "Chao1", "Shannon", "InvSimpson")
+SILVA_MERDS_rar_map=sample_data(SILVA_MERDS_rar)
+SILVA_MERDS_rar.divfil=estimate_richness(SILVA_MERDS_rar,measures=alpha_meas)
+
+SILVA_MERDS_rar.divfil=merge(SILVA_MERDS_rar.divfil, SILVA_MERDS_rar_map, by ="row.names")
+
+head(SILVA_MERDS_rar.divfil)
+row.names(SILVA_MERDS_rar.divfil)=SILVA_MERDS_rar.divfil$Row.names
+SILVA_MERDS_rar.divfil$Row.names=NULL
+
+ggplot(SILVA_MERDS_rar.divfil, aes(x=soil_status, y=Observed))+geom_boxplot(aes(color=interaction(root_association,precip,life_stage)))+
+  scale_y_continuous(name="Richness")+theme_bw()
+SILVA_MERDS_rar.divfil$soil_root=with(SILVA_MERDS_rar.divfil, interaction(soil_status,root_association))
+SILVA_MERDS_rar.divfil$soil_root_stage=with(SILVA_MERDS_rar.divfil, interaction(soil_status,root_association,life_stage))
+```
+
+
+### Start community Richness
+
+```{r include=FALSE}
+SILVA_MERDS_rar.divfil_start=subset(SILVA_MERDS_rar.divfil, life_stage=="Start")
+nrow(SILVA_MERDS_rar.divfil_start)
+#8
+#summary(SILVA_MERDS_rar.divfil_start)
+```
+Diagnostic Graphs
+```{r}
+bact_obs_rich_model_start= lmer((Observed)~soil_root+(1|block), data= SILVA_MERDS_rar.divfil_start)
+qqPlot(resid(bact_obs_rich_model_start))
+hist(resid(bact_obs_rich_model_start))
+shapiro.test(resid(bact_obs_rich_model_start))
+#0.2615
+```
+
+Raw Statistical output
+
+```{r}
+anova(bact_obs_rich_model_start)
+
+emmeans(bact_obs_rich_model_start, pairwise~soil_root)
+```
+
+
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_obs_rich_model_start=anova(bact_obs_rich_model_start)
+df_anova_bact_obs_rich_model_start=data.frame(row.names =row.names(anova_bact_obs_rich_model_start),"Df"=anova_bact_obs_rich_model_start$NumDF,"Resid Df"=anova_bact_obs_rich_model_start$DenDF,"F-value"=anova_bact_obs_rich_model_start$`F value`,"P-value"=anova_bact_obs_rich_model_start$`Pr(>F)`)
+kable(df_anova_bact_obs_rich_model_start,align = "c",digits = c(1,2,2,3), caption= "Starting soil communtiy richness")
+```
+
+##### Graph for publication
+
+```{r echo=FALSE}
+SILVA_MERDS_rar.divfil_start_precip_soil_g=SILVA_MERDS_rar.divfil_start %>% group_by(soil_root,precip)
+obs_rich_precip_Start=summarise_at(SILVA_MERDS_rar.divfil_start_precip_soil_g, 
+                                   "Observed", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+treatment_order_Start=c("L.B","L.R")
+(Start_obs_richness_p=ggplot(obs_rich_precip_Start,aes(x=factor(soil_root,levels = treatment_order_Start),fill=factor(soil_root,levels = treatment_order_Start)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,2450))+
+    scale_fill_manual(values = c("lightgray", "darkgrey"),labels=c("Bulk","Rhizo"), limits=treatment_order_Start, name=NULL)+
+    scale_x_discrete(labels=c("Bulk","Rhizo"), name=NULL)+ylab("Bacterial richness")+
+    geom_text(aes(y=80, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+```
+
+
+
+
+### Start community inv Simpson
+
+```{r include=FALSE}
+SILVA_MERDS_rar.divfil_start=subset(SILVA_MERDS_rar.divfil, life_stage=="Start")
+nrow(SILVA_MERDS_rar.divfil_start)
+#8
+#summary(SILVA_MERDS_rar.divfil_start)
+```
+Diagnostic Graphs
+```{r}
+bact_InvSimp_model_start= lmer((InvSimpson)~soil_root+(1|block), data= SILVA_MERDS_rar.divfil_start)
+qqPlot(resid(bact_InvSimp_model_start))
+hist(resid(bact_InvSimp_model_start))
+shapiro.test(resid(bact_InvSimp_model_start))
+#0.4101
+```
+
+Raw Statistical output
+
+```{r}
+anova(bact_InvSimp_model_start)
+
+emmeans(bact_InvSimp_model_start, pairwise~soil_root)
+```
+
+
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_InvSimp_model_start=anova(bact_InvSimp_model_start)
+df_anova_bact_InvSimp_model_start=data.frame(row.names =row.names(anova_bact_InvSimp_model_start),"Df"=anova_bact_InvSimp_model_start$NumDF,"Resid Df"=anova_bact_InvSimp_model_start$DenDF,"F-value"=anova_bact_InvSimp_model_start$`F value`,"P-value"=anova_bact_InvSimp_model_start$`Pr(>F)`)
+kable(df_anova_bact_InvSimp_model_start,align = "c",digits = c(1,2,2,3), caption= "Starting soil communtiy inverse Simpson")
+```
+
+
+##### Graph for publication
+
+```{r echo=FALSE}
+SILVA_MERDS_rar.divfil_start_precip_soil_g=SILVA_MERDS_rar.divfil_start %>% group_by(soil_root,precip)
+inv_simp_precip_Start=summarise_at(SILVA_MERDS_rar.divfil_start_precip_soil_g, 
+                                   "InvSimpson", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+treatment_order_Start=c("L.B","L.R")
+(Start_inv_simpson_p=ggplot(inv_simp_precip_Start,aes(x=factor(soil_root,levels = treatment_order_Start),fill=factor(soil_root,levels = treatment_order_Start)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(-10,370))+
+    scale_fill_manual(values = c("lightgray", "darkgrey"),labels=c("Bulk","Rhizo"), limits=treatment_order_Start, name=NULL)+
+    scale_x_discrete(labels=c("Bulk","Rhizo"), name=NULL)+ylab("inv Simpson bacteria")+
+    geom_text(aes(y=80, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+### Transplant Richness
+
+```{r include=FALSE}
+SILVA_MERDS_rar.divfil_trt=subset(SILVA_MERDS_rar.divfil, life_stage!="Start")
+#
+#let's just look at the treatments
+SILVA_MERDS_rar.divfil_trt_trans=subset(SILVA_MERDS_rar.divfil_trt, life_stage=="G")
+nrow(SILVA_MERDS_rar.divfil_trt_trans)
+#24
+```
+Diagnostic Graphs
+```{r}
+bact_obs_rich_model_trans= lmer((Observed)~soil_root*precip+(1|block), data= SILVA_MERDS_rar.divfil_trt_trans)
+qqPlot(resid(bact_obs_rich_model_trans))
+hist(resid(bact_obs_rich_model_trans))
+shapiro.test(resid(bact_obs_rich_model_trans))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_obs_rich_model_trans)
+emmeans(bact_obs_rich_model_trans, pairwise~soil_root|precip)
+emmeans(bact_obs_rich_model_trans, pairwise~soil_root)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_obs_rich_model_trans=anova(bact_obs_rich_model_trans)
+df_anova_bact_obs_rich_model_trans=data.frame(row.names =row.names(anova_bact_obs_rich_model_trans),"Df"=anova_bact_obs_rich_model_trans$NumDF,"Resid Df"=anova_bact_obs_rich_model_trans$DenDF,"F-value"=anova_bact_obs_rich_model_trans$`F value`,"P-value"=anova_bact_obs_rich_model_trans$`Pr(>F)`)
+kable(df_anova_bact_obs_rich_model_trans,align = "c",digits = c(1,2,2,3), caption= "Transplant soil communtiy richness")
+```
+
+##### Graph for publication
+
+```{r echo=FALSE}
+SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g=SILVA_MERDS_rar.divfil_trt_trans %>% group_by(soil_root,precip)
+obs_rich_precip_trans=summarise_at(SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g, 
+                                   "Observed", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+treatment_order=c("S.B","L.B","L.R")
+(trans_obs_richness_p=ggplot(obs_rich_precip_trans,aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,2450))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Bacterial richness")+
+    geom_text(aes(y=80, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+### Presence Richness
+
+Diagnostic Graphs
+```{r}
+SILVA_MERDS_rar.divfil_pres_trans=subset(SILVA_MERDS_rar.divfil_trt_trans, root_association =="B")
+
+bact_obs_rich_model_trans_pres= lmer((Observed)~soil_root*precip+(1|block), data= SILVA_MERDS_rar.divfil_pres_trans)
+qqPlot(resid(bact_obs_rich_model_trans_pres))
+hist(resid(bact_obs_rich_model_trans_pres))
+shapiro.test(resid(bact_obs_rich_model_trans_pres))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_obs_rich_model_trans_pres)
+emmeans(bact_obs_rich_model_trans_pres, pairwise~soil_root|precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_obs_rich_model_trans_pres=anova(bact_obs_rich_model_trans_pres)
+df_anova_bact_obs_rich_model_trans_pres=data.frame(row.names =row.names(anova_bact_obs_rich_model_trans_pres),"Df"=anova_bact_obs_rich_model_trans_pres$NumDF,"Resid Df"=anova_bact_obs_rich_model_trans_pres$DenDF,"F-value"=anova_bact_obs_rich_model_trans_pres$`F value`,"P-value"=anova_bact_obs_rich_model_trans_pres$`Pr(>F)`)
+kable(df_anova_bact_obs_rich_model_trans_pres,align = "c",digits = c(1,2,2,3), caption= "Presence Transplant soil communtiy richness")
+```
+
+
+### Origin Richness
+
+Diagnostic Graphs
+```{r}
+SILVA_MERDS_rar.divfil_orig_trans=subset(SILVA_MERDS_rar.divfil_trt_trans, soil_status =="L")
+
+bact_obs_rich_model_trans_orig= lmer((Observed)~soil_root*precip+(1|block), data= SILVA_MERDS_rar.divfil_orig_trans)
+qqPlot(resid(bact_obs_rich_model_trans_orig))
+hist(resid(bact_obs_rich_model_trans_orig))
+shapiro.test(resid(bact_obs_rich_model_trans_orig))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_obs_rich_model_trans_orig)
+emmeans(bact_obs_rich_model_trans_orig, pairwise~soil_root|precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_obs_rich_model_trans_orig=anova(bact_obs_rich_model_trans_orig)
+df_anova_bact_obs_rich_model_trans_orig=data.frame(row.names =row.names(anova_bact_obs_rich_model_trans_orig),"Df"=anova_bact_obs_rich_model_trans_orig$NumDF,"Resid Df"=anova_bact_obs_rich_model_trans_orig$DenDF,"F-value"=anova_bact_obs_rich_model_trans_orig$`F value`,"P-value"=anova_bact_obs_rich_model_trans_orig$`Pr(>F)`)
+kable(df_anova_bact_obs_rich_model_trans_orig,align = "c",digits = c(1,2,2,3), caption= "Presence Transplant soil communtiy richness")
+```
+
+### Transplant inv Simpson
+
+```{r include=FALSE}
+SILVA_MERDS_rar.divfil_trt=subset(SILVA_MERDS_rar.divfil, life_stage!="Start")
+#
+#let's just look at the treatments
+SILVA_MERDS_rar.divfil_trt_trans=subset(SILVA_MERDS_rar.divfil_trt, life_stage=="G")
+nrow(SILVA_MERDS_rar.divfil_trt_trans)
+#24
+```
+Diagnostic Graphs
+```{r}
+bact_inv_simp_model_trans= lmer((InvSimpson)~soil_root*precip+(1|block), data= SILVA_MERDS_rar.divfil_trt_trans)
+qqPlot(resid(bact_inv_simp_model_trans))
+hist(resid(bact_inv_simp_model_trans))
+shapiro.test(resid(bact_inv_simp_model_trans))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_inv_simp_model_trans)
+emmeans(bact_inv_simp_model_trans, pairwise~soil_root|precip)
+emmeans(bact_inv_simp_model_trans, pairwise~soil_root)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_inv_simp_model_trans=anova(bact_inv_simp_model_trans)
+df_anova_bact_inv_simp_model_trans=data.frame(row.names =row.names(anova_bact_inv_simp_model_trans),"Df"=anova_bact_inv_simp_model_trans$NumDF,"Resid Df"=anova_bact_inv_simp_model_trans$DenDF,"F-value"=anova_bact_inv_simp_model_trans$`F value`,"P-value"=anova_bact_inv_simp_model_trans$`Pr(>F)`)
+kable(df_anova_bact_inv_simp_model_trans,align = "c",digits = c(1,2,2,3), caption= "Transplant soil communtiy inv Simpson")
+```
+
+##### Graph for publication
+
+```{r echo=FALSE}
+SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g=SILVA_MERDS_rar.divfil_trt_trans %>% group_by(soil_root,precip)
+inv_simp_precip_trans=summarise_at(SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g, 
+                                   "InvSimpson", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+(trans_inv_simpson_p=ggplot(inv_simp_precip_trans, aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),
+                  position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(-10,370))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("inv Simpson bacteria")+
+    geom_text(aes(y=-7, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 23), axis.text = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+```
+
+
+
+### Presence inv Simpson
+
+Diagnostic Graphs
+```{r}
+SILVA_MERDS_rar.divfil_pres_trans=subset(SILVA_MERDS_rar.divfil_trt_trans, root_association =="B")
+
+bact_inv_simp_model_trans_pres= lmer((InvSimpson)^(-1/2)~soil_root*precip+(1|block), data= SILVA_MERDS_rar.divfil_pres_trans)
+qqPlot(resid(bact_inv_simp_model_trans_pres))
+hist(resid(bact_inv_simp_model_trans_pres))
+shapiro.test(resid(bact_inv_simp_model_trans_pres))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_inv_simp_model_trans_pres)
+emmeans(bact_inv_simp_model_trans_pres, pairwise~soil_root|precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_inv_simp_model_trans_pres=anova(bact_inv_simp_model_trans_pres)
+df_anova_bact_inv_simp_model_trans_pres=data.frame(row.names =row.names(anova_bact_inv_simp_model_trans_pres),"Df"=anova_bact_inv_simp_model_trans_pres$NumDF,"Resid Df"=anova_bact_inv_simp_model_trans_pres$DenDF,"F-value"=anova_bact_inv_simp_model_trans_pres$`F value`,"P-value"=anova_bact_inv_simp_model_trans_pres$`Pr(>F)`)
+kable(df_anova_bact_inv_simp_model_trans_pres,align = "c",digits = c(1,2,2,3), caption= "Presence Transplant soil communtiy inv Simpson")
+```
+
+
+### Origin inv Simpson
+
+Diagnostic Graphs
+```{r}
+SILVA_MERDS_rar.divfil_orig_trans=subset(SILVA_MERDS_rar.divfil_trt_trans, soil_status =="L")
+
+bact_inv_simp_model_trans_orig= lmer((InvSimpson)~soil_root*precip+(1|block), data= SILVA_MERDS_rar.divfil_orig_trans)
+qqPlot(resid(bact_inv_simp_model_trans_orig))
+hist(resid(bact_inv_simp_model_trans_orig))
+shapiro.test(resid(bact_inv_simp_model_trans_orig))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_inv_simp_model_trans_orig)
+emmeans(bact_inv_simp_model_trans_orig, pairwise~soil_root|precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_inv_simp_model_trans_orig=anova(bact_inv_simp_model_trans_orig)
+df_anova_bact_inv_simp_model_trans_orig=data.frame(row.names =row.names(anova_bact_inv_simp_model_trans_orig),"Df"=anova_bact_inv_simp_model_trans_orig$NumDF,"Resid Df"=anova_bact_inv_simp_model_trans_orig$DenDF,"F-value"=anova_bact_inv_simp_model_trans_orig$`F value`,"P-value"=anova_bact_inv_simp_model_trans_orig$`Pr(>F)`)
+kable(df_anova_bact_inv_simp_model_trans_orig,align = "c",digits = c(1,2,2,3), caption= "Presence Transplant soil communtiy inv Simpson")
+```
+
+
+### Seed Richness
+
+```{r include=FALSE}
+SILVA_MERDS_rar.divfil_trt=subset(SILVA_MERDS_rar.divfil, life_stage!="Start")
+#
+#let's just look at the treatments
+SILVA_MERDS_rar.divfil_trt_seed=subset(SILVA_MERDS_rar.divfil_trt, life_stage=="S")
+nrow(SILVA_MERDS_rar.divfil_trt_seed)
+#23
+```
+Diagnostic Graphs
+```{r}
+bact_obs_rich_model_seed= lmer(log(Observed)~soil_root*precip+(1|block), data= SILVA_MERDS_rar.divfil_trt_seed)
+qqPlot(resid(bact_obs_rich_model_seed))
+hist(resid(bact_obs_rich_model_seed))
+shapiro.test(resid(bact_obs_rich_model_seed))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_obs_rich_model_seed)
+emmeans(bact_obs_rich_model_seed, pairwise~soil_root|precip)
+emmeans(bact_obs_rich_model_seed, pairwise~soil_root)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_obs_rich_model_seed=anova(bact_obs_rich_model_seed)
+df_anova_bact_obs_rich_model_seed=data.frame(row.names =row.names(anova_bact_obs_rich_model_seed),"Df"=anova_bact_obs_rich_model_seed$NumDF,"Resid Df"=anova_bact_obs_rich_model_seed$DenDF,"F-value"=anova_bact_obs_rich_model_seed$`F value`,"P-value"=anova_bact_obs_rich_model_seed$`Pr(>F)`)
+kable(df_anova_bact_obs_rich_model_seed,align = "c",digits = c(1,2,2,3), caption= "Seed soil communtiy richness")
+```
+
+##### Graph for publication
+
+```{r echo=FALSE}
+SILVA_MERDS_rar.divfil_trt_seed_precip_soil_g=SILVA_MERDS_rar.divfil_trt_seed %>% group_by(soil_root,precip)
+obs_rich_precip_seed=summarise_at(SILVA_MERDS_rar.divfil_trt_seed_precip_soil_g, 
+                                  "Observed", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+(seed_obs_richness_p=ggplot(obs_rich_precip_seed, aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,2450))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Bacterial richness")+
+    geom_text(aes(y=80, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title.x = element_text(size = 23), axis.text.x = element_text(size = 23),
+          axis.title.y = element_text(size = 23), axis.text.y = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+
+
+
+#### Percent Difference from initial community in Bulk
+```{r echo=FALSE}
+
+obs_rich_start_seed=SILVA_MERDS_rar.divfil %>% group_by(soil_root,life_stage) %>%  summarise_at("Observed", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+
+
+((obs_rich_start_seed[obs_rich_start_seed$life_stage=="S"&obs_rich_start_seed$soil_root=="L.B",]$mean-obs_rich_start_seed[obs_rich_start_seed$life_stage=="Start"&obs_rich_start_seed$soil_root=="L.B",]$mean)/obs_rich_start_seed[obs_rich_start_seed$life_stage=="Start"&obs_rich_start_seed$soil_root=="L.B",]$mean)*100
+
+```
+
+
+#### Percent Difference from initial community in Rhizosphere
+```{r echo=FALSE}
+
+obs_rich_start_seed=SILVA_MERDS_rar.divfil %>% group_by(soil_root,life_stage) %>%  summarise_at("Observed", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+
+
+((obs_rich_start_seed[obs_rich_start_seed$life_stage=="S"&obs_rich_start_seed$soil_root=="L.R",]$mean-obs_rich_start_seed[obs_rich_start_seed$life_stage=="Start"&obs_rich_start_seed$soil_root=="L.R",]$mean)/obs_rich_start_seed[obs_rich_start_seed$life_stage=="Start"&obs_rich_start_seed$soil_root=="L.R",]$mean)*100
+
+```
+
+### Presence Richness
+
+Diagnostic Graphs
+```{r}
+SILVA_MERDS_rar.divfil_pres_seed=subset(SILVA_MERDS_rar.divfil_trt_seed, root_association =="B")
+
+bact_obs_rich_model_seed_pres= lmer((Observed)~soil_root*precip+(1|block), data= SILVA_MERDS_rar.divfil_pres_seed)
+qqPlot(resid(bact_obs_rich_model_seed_pres))
+hist(resid(bact_obs_rich_model_seed_pres))
+shapiro.test(resid(bact_obs_rich_model_seed_pres))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_obs_rich_model_seed_pres)
+emmeans(bact_obs_rich_model_seed_pres, pairwise~soil_root|precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_obs_rich_model_seed_pres=anova(bact_obs_rich_model_seed_pres)
+df_anova_bact_obs_rich_model_seed_pres=data.frame(row.names =row.names(anova_bact_obs_rich_model_seed_pres),"Df"=anova_bact_obs_rich_model_seed_pres$NumDF,"Resid Df"=anova_bact_obs_rich_model_seed_pres$DenDF,"F-value"=anova_bact_obs_rich_model_seed_pres$`F value`,"P-value"=anova_bact_obs_rich_model_seed_pres$`Pr(>F)`)
+kable(df_anova_bact_obs_rich_model_seed_pres,align = "c",digits = c(1,2,2,3), caption= "Presence Seed soil communtiy richness")
+```
+
+
+### Origin Richness
+
+Diagnostic Graphs
+```{r}
+SILVA_MERDS_rar.divfil_orig_seed=subset(SILVA_MERDS_rar.divfil_trt_seed, soil_status =="L")
+
+bact_obs_rich_model_seed_orig= lmer((Observed)~soil_root*precip+(1|block), data= SILVA_MERDS_rar.divfil_orig_seed)
+qqPlot(resid(bact_obs_rich_model_seed_orig))
+hist(resid(bact_obs_rich_model_seed_orig))
+shapiro.test(resid(bact_obs_rich_model_seed_orig))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_obs_rich_model_seed_orig)
+emmeans(bact_obs_rich_model_seed_orig, pairwise~soil_root|precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_obs_rich_model_seed_orig=anova(bact_obs_rich_model_seed_orig)
+df_anova_bact_obs_rich_model_seed_orig=data.frame(row.names =row.names(anova_bact_obs_rich_model_seed_orig),"Df"=anova_bact_obs_rich_model_seed_orig$NumDF,"Resid Df"=anova_bact_obs_rich_model_seed_orig$DenDF,"F-value"=anova_bact_obs_rich_model_seed_orig$`F value`,"P-value"=anova_bact_obs_rich_model_seed_orig$`Pr(>F)`)
+kable(df_anova_bact_obs_rich_model_seed_orig,align = "c",digits = c(1,2,2,3), caption= "Presence Seed soil communtiy richness")
+```
+
+### Seed inv Simpson
+
+```{r include=FALSE}
+SILVA_MERDS_rar.divfil_trt=subset(SILVA_MERDS_rar.divfil, life_stage!="Start")
+#
+#let's just look at the treatments
+SILVA_MERDS_rar.divfil_trt_seed=subset(SILVA_MERDS_rar.divfil_trt, life_stage=="S")
+nrow(SILVA_MERDS_rar.divfil_trt_seed)
+#23
+```
+Diagnostic Graphs
+```{r}
+bact_inv_simp_model_seed= lmer(log(InvSimpson)~soil_root*precip+(1|block), data= SILVA_MERDS_rar.divfil_trt_seed)
+qqPlot(resid(bact_inv_simp_model_seed))
+hist(resid(bact_inv_simp_model_seed))
+shapiro.test(resid(bact_inv_simp_model_seed))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_inv_simp_model_seed)
+emmeans(bact_inv_simp_model_seed, pairwise~soil_root|precip)
+emmeans(bact_inv_simp_model_seed, pairwise~soil_root)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_inv_simp_model_seed=anova(bact_inv_simp_model_seed)
+df_anova_bact_inv_simp_model_seed=data.frame(row.names =row.names(anova_bact_inv_simp_model_seed),"Df"=anova_bact_inv_simp_model_seed$NumDF,"Resid Df"=anova_bact_inv_simp_model_seed$DenDF,"F-value"=anova_bact_inv_simp_model_seed$`F value`,"P-value"=anova_bact_inv_simp_model_seed$`Pr(>F)`)
+kable(df_anova_bact_inv_simp_model_seed,align = "c",digits = c(1,2,2,3), caption= "Seed soil communtiy inv Simpson")
+```
+
+##### Graph for publication
+
+```{r echo=FALSE}
+SILVA_MERDS_rar.divfil_trt_seed_precip_soil_g=SILVA_MERDS_rar.divfil_trt_seed %>% group_by(soil_root,precip)
+inv_simp_precip_seed=summarise_at(SILVA_MERDS_rar.divfil_trt_seed_precip_soil_g, 
+                                  "InvSimpson", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+
+(seed_inv_simpson_p=ggplot(inv_simp_precip_seed, aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(-10,370))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("inv Simpson bacteria")+
+    geom_text(aes(y=-7, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title.x = element_text(size = 23), axis.text.x = element_text(size = 23),
+          axis.title.y = element_text(size = 23), axis.text.y = element_text(size = 23),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+```
+
+
+
+
+##### Combined Graph for publication
+
+```{r echo=FALSE, include=FALSE}
+SILVA_MERDS_rar.divfil_start_precip_soil_g=SILVA_MERDS_rar.divfil_start %>% group_by(soil_root,precip)
+obs_rich_precip_Start=summarise_at(SILVA_MERDS_rar.divfil_start_precip_soil_g, 
+                                   "Observed", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+treatment_order_Start=c("L.B","L.R")
+(Start_obs_richness_p2=ggplot(obs_rich_precip_Start,aes(x=factor(soil_root,levels = treatment_order_Start),fill=factor(soil_root,levels = treatment_order_Start)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,2450))+
+    scale_fill_manual(values = c("lightgray", "darkgrey"),labels=c("Bulk","Rhizo"), limits=treatment_order_Start, name=NULL)+
+    scale_x_discrete(labels=c("Bulk","Rhizo"), name=NULL)+ylab("Bacterial richness")+
+    geom_text(aes(y=80, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title.y = element_text(size = 32),axis.title.x = element_blank(), axis.text.y = element_text(size = 28),axis.text.x = element_blank(),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+inv_simp_precip_Start=summarise_at(SILVA_MERDS_rar.divfil_start_precip_soil_g, 
+                                   "InvSimpson", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+
+(Start_inv_simpson_p2=ggplot(inv_simp_precip_Start,aes(x=factor(soil_root,levels = treatment_order_Start),fill=factor(soil_root,levels = treatment_order_Start)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(-10,370))+
+    scale_fill_manual(values = c("lightgray", "darkgrey"),labels=c("Bulk","Rhizo"), limits=treatment_order_Start, name=NULL)+
+    scale_x_discrete(labels=c("Bulk","Rhizo"), name=NULL)+ylab("inv Simpson bacteria")+
+    geom_text(aes(y=-7, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_text(size = 32), axis.text = element_text(size = 28),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+
+SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g=SILVA_MERDS_rar.divfil_trt_trans %>% group_by(soil_root,precip)
+obs_rich_precip_trans=summarise_at(SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g, 
+                                   "Observed", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+treatment_order=c("S.B","L.B","L.R")
+(trans_obs_richness_p2=ggplot(obs_rich_precip_trans,aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,2450))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Bacterial richness")+
+    geom_text(aes(y=80, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_blank(), axis.text = element_blank(),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+
+inv_simp_precip_trans=summarise_at(SILVA_MERDS_rar.divfil_trt_trans_precip_soil_g, 
+                                   "InvSimpson", list(~n(),~mean(.),~sd(.),se=~sd(.)/sqrt(n())))
+(trans_inv_simpson_p2=ggplot(inv_simp_precip_trans, aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),
+                  position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(-10,370))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("inv Simpson bacteria")+
+    geom_text(aes(y=-7, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_blank(), axis.text.x = element_text(size = 28), axis.text.y=element_blank(),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+
+obs_rich_precip_seed=summarise_at(SILVA_MERDS_rar.divfil_trt_seed_precip_soil_g, 
+                                  "Observed", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+(seed_obs_richness_p2=ggplot(obs_rich_precip_seed, aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(0,2450))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("Bacterial richness")+
+    geom_text(aes(y=80, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_blank(),axis.text= element_blank(),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+inv_simp_precip_seed=summarise_at(SILVA_MERDS_rar.divfil_trt_seed_precip_soil_g, 
+                                  "InvSimpson", funs(n(),mean,sd,se=sd(.)/sqrt(n())))
+
+(seed_inv_simpson_p2=ggplot(inv_simp_precip_seed, aes(x=precip,fill=factor(soil_root,levels = treatment_order)))+
+    geom_bar(aes(y=mean),position="dodge",stat="identity", color="black")+
+    geom_errorbar(aes(y=mean, ymin = mean-se, ymax= mean+se),position=position_dodge(width=0.9), width=0.2, size=1)+ylim(c(-10,370))+
+    scale_fill_manual(values = c( "white","lightgray", "darkgrey"),labels=c("Sterile","Bulk","Rhizo"), limits=treatment_order, name=NULL)+
+    scale_x_discrete(labels=c("Ambient","Drought"), name=NULL)+ylab("inv Simpson bacteria")+
+    geom_text(aes(y=-7, label=n),size=10,position=position_dodge(width=0.9))+theme_bw()+
+    theme(axis.title = element_blank(), axis.text.x = element_text(size = 28), axis.text.y=element_blank(),
+          legend.position = "none",panel.grid.major = element_blank(), panel.grid.minor = element_blank()))
+
+comined_div_rich_start_end=ggarrange(Start_obs_richness_p2,trans_obs_richness_p2,seed_obs_richness_p2,
+          Start_inv_simpson_p2,trans_inv_simpson_p2,seed_inv_simpson_p2,
+          ncol = 3,nrow = 2  ,legend = "none",widths = c(0.45,1,1),align = "hv")
+#ggsave("D:/MERDS_2018/merds/Switchgrass/R_fig/bacterial_diversity_richness_comb_v2.svg",comined_div_rich_start_end,width =25,height = 16,device="svg")
+
+```
+
+
+
+
+### Presence inv Simpson
+
+Diagnostic Graphs
+```{r}
+SILVA_MERDS_rar.divfil_pres_seed=subset(SILVA_MERDS_rar.divfil_trt_seed, root_association =="B")
+
+bact_inv_simp_model_seed_pres= lmer(log(InvSimpson)~soil_root*precip+(1|block), data= SILVA_MERDS_rar.divfil_pres_seed)
+qqPlot(resid(bact_inv_simp_model_seed_pres))
+hist(resid(bact_inv_simp_model_seed_pres))
+shapiro.test(resid(bact_inv_simp_model_seed_pres))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_inv_simp_model_seed_pres)
+emmeans(bact_inv_simp_model_seed_pres, pairwise~soil_root|precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_inv_simp_model_seed_pres=anova(bact_inv_simp_model_seed_pres)
+df_anova_bact_inv_simp_model_seed_pres=data.frame(row.names =row.names(anova_bact_inv_simp_model_seed_pres),"Df"=anova_bact_inv_simp_model_seed_pres$NumDF,"Resid Df"=anova_bact_inv_simp_model_seed_pres$DenDF,"F-value"=anova_bact_inv_simp_model_seed_pres$`F value`,"P-value"=anova_bact_inv_simp_model_seed_pres$`Pr(>F)`)
+kable(df_anova_bact_inv_simp_model_seed_pres,align = "c",digits = c(1,2,2,3), caption= "Presence Seed soil communtiy inv Simpson")
+```
+
+
+### Origin inv Simpson
+
+Diagnostic Graphs
+```{r}
+SILVA_MERDS_rar.divfil_orig_seed=subset(SILVA_MERDS_rar.divfil_trt_seed, soil_status =="L")
+
+bact_inv_simp_model_seed_orig= lmer((InvSimpson)~soil_root*precip+(1|block), data= SILVA_MERDS_rar.divfil_orig_seed)
+qqPlot(resid(bact_inv_simp_model_seed_orig))
+hist(resid(bact_inv_simp_model_seed_orig))
+shapiro.test(resid(bact_inv_simp_model_seed_orig))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_inv_simp_model_seed_orig)
+emmeans(bact_inv_simp_model_seed_orig, pairwise~soil_root|precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_inv_simp_model_seed_orig=anova(bact_inv_simp_model_seed_orig)
+df_anova_bact_inv_simp_model_seed_orig=data.frame(row.names =row.names(anova_bact_inv_simp_model_seed_orig),"Df"=anova_bact_inv_simp_model_seed_orig$NumDF,"Resid Df"=anova_bact_inv_simp_model_seed_orig$DenDF,"F-value"=anova_bact_inv_simp_model_seed_orig$`F value`,"P-value"=anova_bact_inv_simp_model_seed_orig$`Pr(>F)`)
+kable(df_anova_bact_inv_simp_model_seed_orig,align = "c",digits = c(1,2,2,3), caption= "Presence Seed soil communtiy inv Simpson")
+```
+
+
+## Diversity across the life stages 
+
+### Combined Richness
+
+```{r include=FALSE}
+SILVA_MERDS_rar.divfil_trt=subset(SILVA_MERDS_rar.divfil, life_stage!="Start")
+
+```
+Diagnostic Graphs
+```{r}
+bact_obs_rich_model_comb= lmer(log(Observed)~soil_root*precip*life_stage+(1|block), data= SILVA_MERDS_rar.divfil_trt)
+qqPlot(resid(bact_obs_rich_model_comb))
+hist(resid(bact_obs_rich_model_comb))
+shapiro.test(resid(bact_obs_rich_model_comb))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_obs_rich_model_comb)
+emmeans(bact_obs_rich_model_comb, pairwise~soil_root|life_stage)
+emmeans(bact_obs_rich_model_comb, pairwise~life_stage|soil_root)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_obs_rich_model_comb=anova(bact_obs_rich_model_comb)
+df_anova_bact_obs_rich_model_comb=data.frame(row.names =row.names(anova_bact_obs_rich_model_comb),"Df"=anova_bact_obs_rich_model_comb$NumDF,"Resid Df"=anova_bact_obs_rich_model_comb$DenDF,"F-value"=anova_bact_obs_rich_model_comb$`F value`,"P-value"=anova_bact_obs_rich_model_comb$`Pr(>F)`)
+kable(df_anova_bact_obs_rich_model_comb,align = "c",digits = c(1,2,2,3), caption= "Combined soil communtiy richness")
+```
+
+
+### Presence Richness
+
+Diagnostic Graphs
+```{r}
+SILVA_MERDS_rar.divfil_pres_comb=subset(SILVA_MERDS_rar.divfil_trt, root_association =="B")
+
+bact_obs_rich_model_comb_pres= lmer(log(Observed)~soil_root*precip*life_stage+(1|block), data= SILVA_MERDS_rar.divfil_pres_comb)
+qqPlot(resid(bact_obs_rich_model_comb_pres))
+hist(resid(bact_obs_rich_model_comb_pres))
+shapiro.test(resid(bact_obs_rich_model_comb_pres))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_obs_rich_model_comb_pres)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_obs_rich_model_comb_pres=anova(bact_obs_rich_model_comb_pres)
+df_anova_bact_obs_rich_model_comb_pres=data.frame(row.names =row.names(anova_bact_obs_rich_model_comb_pres),"Df"=anova_bact_obs_rich_model_comb_pres$NumDF,"Resid Df"=anova_bact_obs_rich_model_comb_pres$DenDF,"F-value"=anova_bact_obs_rich_model_comb_pres$`F value`,"P-value"=anova_bact_obs_rich_model_comb_pres$`Pr(>F)`)
+kable(df_anova_bact_obs_rich_model_comb_pres,align = "c",digits = c(1,2,2,3), caption= "Presence Combined soil communtiy richness")
+```
+
+
+### Origin Richness
+
+Diagnostic Graphs
+```{r}
+SILVA_MERDS_rar.divfil_orig_comb=subset(SILVA_MERDS_rar.divfil_trt, soil_status =="L")
+
+bact_obs_rich_model_comb_orig= lmer((Observed)~soil_root*precip*life_stage+(1|block), data= SILVA_MERDS_rar.divfil_orig_comb)
+qqPlot(resid(bact_obs_rich_model_comb_orig))
+hist(resid(bact_obs_rich_model_comb_orig))
+shapiro.test(resid(bact_obs_rich_model_comb_orig))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_obs_rich_model_comb_orig)
+emmeans(bact_obs_rich_model_comb_orig, pairwise~soil_root|life_stage)
+emmeans(bact_obs_rich_model_comb_orig, pairwise~life_stage|soil_root)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_obs_rich_model_comb_orig=anova(bact_obs_rich_model_comb_orig)
+df_anova_bact_obs_rich_model_comb_orig=data.frame(row.names =row.names(anova_bact_obs_rich_model_comb_orig),"Df"=anova_bact_obs_rich_model_comb_orig$NumDF,"Resid Df"=anova_bact_obs_rich_model_comb_orig$DenDF,"F-value"=anova_bact_obs_rich_model_comb_orig$`F value`,"P-value"=anova_bact_obs_rich_model_comb_orig$`Pr(>F)`)
+kable(df_anova_bact_obs_rich_model_comb_orig,align = "c",digits = c(1,2,2,3), caption= "Presence Combined soil communtiy richness")
+```
+
+### Combined inv Simpson
+
+```{r include=FALSE}
+SILVA_MERDS_rar.divfil_trt=subset(SILVA_MERDS_rar.divfil, life_stage!="Start")
+#
+
+```
+Diagnostic Graphs
+```{r}
+bact_inv_simp_model_comb= lmer(log(InvSimpson)~soil_root*precip*life_stage+(1|block), data= SILVA_MERDS_rar.divfil_trt)
+qqPlot(resid(bact_inv_simp_model_comb))
+hist(resid(bact_inv_simp_model_comb))
+shapiro.test(resid(bact_inv_simp_model_comb))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_inv_simp_model_comb)
+emmeans(bact_inv_simp_model_comb, pairwise~soil_root|life_stage)
+emmeans(bact_inv_simp_model_comb, pairwise~life_stage|soil_root)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_inv_simp_model_comb=anova(bact_inv_simp_model_comb)
+df_anova_bact_inv_simp_model_comb=data.frame(row.names =row.names(anova_bact_inv_simp_model_comb),"Df"=anova_bact_inv_simp_model_comb$NumDF,"Resid Df"=anova_bact_inv_simp_model_comb$DenDF,"F-value"=anova_bact_inv_simp_model_comb$`F value`,"P-value"=anova_bact_inv_simp_model_comb$`Pr(>F)`)
+kable(df_anova_bact_inv_simp_model_comb,align = "c",digits = c(1,2,2,3), caption= "Combined soil communtiy inv Simpson")
+```
+
+### Presence inv Simpson
+
+Diagnostic Graphs
+```{r}
+SILVA_MERDS_rar.divfil_pres_comb=subset(SILVA_MERDS_rar.divfil_trt, root_association =="B")
+
+bact_inv_simp_model_comb_pres= lmer(log(InvSimpson)~soil_root*precip*life_stage+(1|block), data= SILVA_MERDS_rar.divfil_pres_comb)
+qqPlot(resid(bact_inv_simp_model_comb_pres))
+hist(resid(bact_inv_simp_model_comb_pres))
+shapiro.test(resid(bact_inv_simp_model_comb_pres))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_inv_simp_model_comb_pres)
+emmeans(bact_inv_simp_model_comb_pres, pairwise~soil_root|precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_inv_simp_model_comb_pres=anova(bact_inv_simp_model_comb_pres)
+df_anova_bact_inv_simp_model_comb_pres=data.frame(row.names =row.names(anova_bact_inv_simp_model_comb_pres),"Df"=anova_bact_inv_simp_model_comb_pres$NumDF,"Resid Df"=anova_bact_inv_simp_model_comb_pres$DenDF,"F-value"=anova_bact_inv_simp_model_comb_pres$`F value`,"P-value"=anova_bact_inv_simp_model_comb_pres$`Pr(>F)`)
+kable(df_anova_bact_inv_simp_model_comb_pres,align = "c",digits = c(1,2,2,3), caption= "Presence Combined soil communtiy inv Simpson")
+```
+
+
+### Origin inv Simpson
+
+Diagnostic Graphs
+```{r}
+SILVA_MERDS_rar.divfil_orig_comb=subset(SILVA_MERDS_rar.divfil_trt, soil_status =="L")
+
+bact_inv_simp_model_comb_orig= lmer((InvSimpson)~soil_root*precip*life_stage+(1|block), data= SILVA_MERDS_rar.divfil_orig_comb)
+qqPlot(resid(bact_inv_simp_model_comb_orig))
+hist(resid(bact_inv_simp_model_comb_orig))
+shapiro.test(resid(bact_inv_simp_model_comb_orig))
+```
+
+
+Raw Statistical output
+
+```{r}
+anova(bact_inv_simp_model_comb_orig)
+emmeans(bact_inv_simp_model_comb_orig, pairwise~soil_root|precip)
+```
+
+Formatted Anova table
+```{r echo=FALSE, results='asis'}
+anova_bact_inv_simp_model_comb_orig=anova(bact_inv_simp_model_comb_orig)
+df_anova_bact_inv_simp_model_comb_orig=data.frame(row.names =row.names(anova_bact_inv_simp_model_comb_orig),"Df"=anova_bact_inv_simp_model_comb_orig$NumDF,"Resid Df"=anova_bact_inv_simp_model_comb_orig$DenDF,"F-value"=anova_bact_inv_simp_model_comb_orig$`F value`,"P-value"=anova_bact_inv_simp_model_comb_orig$`Pr(>F)`)
+kable(df_anova_bact_inv_simp_model_comb_orig,align = "c",digits = c(1,2,2,3), caption= "Presence Combined soil communtiy inv Simpson")
+```
